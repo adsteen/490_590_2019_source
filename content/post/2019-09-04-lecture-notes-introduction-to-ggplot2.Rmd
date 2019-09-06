@@ -1,0 +1,44 @@
+---
+title: 'Lecture notes: Introduction to ggplot2'
+author: ~
+date: '2019-09-04'
+slug: lecture-notes-introduction-to-ggplot2
+categories: []
+tags: []
+---
+
+# Reminders
+
+* We can load data from text files using `read.csv()` (base R) or `read_csv()` (tidyverse)
+  * A csv file ("comma-separated value") is a text file where the columns are separated by commas
+  * Because csv files are both easily machine-readable and human-readable, they are probably the best choice for storing data, unless the data files are very big or very complex. **In general, you should store your data as .csv files unless you have a good reason not to.**
+  * Other common ways to encode tables in text files are tsv files ("tab-separated file") or fixed width files (where each colum is given a fixed number of characters, and no particular character defines the separation between columns.)
+  * There are analogous functions to read tab separated files (`read_tsv()`, `read_fwf()`, `read.delim()`)
+* Note that there are lots of ways to encode data other than text files, including Excel files (boo) and SQL databases (very useful for large or complicated datasets). There are R functions to read data from all of those formats.
+
+# Tidy data
+
+* Base R is pretty, well, basic. Most of the power of R comes from [packages](https://cran.r-project.org/web/packages/available_packages_by_name.html) written mostly by third parties (i.e., not the R Core Team), that add all sorts of functionality to R.
+* In this class, we'll focus on the [tidyverse](https://www.tidyverse.org/) approach to data analysis. Tidyverse is a set of packages, but it is also a coherent approach to data anlysis that is valuable whatever language you're working in.
+* **ggplot2** wants *tidy* data, in the form of data frames
+  * 1 row per observation
+  * 1 column per data point descriptor
+  * Note that this is not a great format for human readibility!
+* Sneak preview of what we'll talk about when we get deeper into the tidyverse: use `tidyr::gather() and tidyr::spread()` to move between wide and long data formats.
+
+```{r, message=FALSE}
+library(tidyverse) # contains ggplot2
+library(gapminder)
+
+glimpse(gapminder)
+
+p <- ggplot(data = gapminder, mapping = aes(x = gdpPercap)) +
+  geom_histogram()  
+  #geom_smooth(method = "lm") +
+  # scale_y_log10(limits = c(20, 90))
+
+str(p)
+print(p + ggtitle("my plot"))
+```
+
+Software Carpentry has an excellent [lesson](http://swcarpentry.github.io/r-novice-gapminder/08-plot-ggplot2/index.html) on using ggplot2, as do the [Wilke](https://serialmentor.com/dataviz/) and [Healey](http://socviz.co/) textbooks.

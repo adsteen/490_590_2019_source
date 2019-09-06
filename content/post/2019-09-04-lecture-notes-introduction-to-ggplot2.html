@@ -1,0 +1,191 @@
+---
+title: 'Lecture notes: Introduction to ggplot2'
+author: ~
+date: '2019-09-04'
+slug: lecture-notes-introduction-to-ggplot2
+categories: []
+tags: []
+---
+
+
+
+<div id="reminders" class="section level1">
+<h1>Reminders</h1>
+<ul>
+<li>We can load data from text files using <code>read.csv()</code> (base R) or <code>read_csv()</code> (tidyverse)
+<ul>
+<li>A csv file (“comma-separated value”) is a text file where the columns are separated by commas</li>
+<li>Because csv files are both easily machine-readable and human-readable, they are probably the best choice for storing data, unless the data files are very big or very complex. <strong>In general, you should store your data as .csv files unless you have a good reason not to.</strong></li>
+<li>Other common ways to encode tables in text files are tsv files (“tab-separated file”) or fixed width files (where each colum is given a fixed number of characters, and no particular character defines the separation between columns.)</li>
+<li>There are analogous functions to read tab separated files (<code>read_tsv()</code>, <code>read_fwf()</code>, <code>read.delim()</code>)</li>
+</ul></li>
+<li>Note that there are lots of ways to encode data other than text files, including Excel files (boo) and SQL databases (very useful for large or complicated datasets). There are R functions to read data from all of those formats.</li>
+</ul>
+</div>
+<div id="tidy-data" class="section level1">
+<h1>Tidy data</h1>
+<ul>
+<li>Base R is pretty, well, basic. Most of the power of R comes from <a href="https://cran.r-project.org/web/packages/available_packages_by_name.html">packages</a> written mostly by third parties (i.e., not the R Core Team), that add all sorts of functionality to R.</li>
+<li>In this class, we’ll focus on the <a href="https://www.tidyverse.org/">tidyverse</a> approach to data analysis. Tidyverse is a set of packages, but it is also a coherent approach to data anlysis that is valuable whatever language you’re working in.</li>
+<li><strong>ggplot2</strong> wants <em>tidy</em> data, in the form of data frames
+<ul>
+<li>1 row per observation</li>
+<li>1 column per data point descriptor</li>
+<li>Note that this is not a great format for human readibility!</li>
+</ul></li>
+<li>Sneak preview of what we’ll talk about when we get deeper into the tidyverse: use <code>tidyr::gather() and tidyr::spread()</code> to move between wide and long data formats.</li>
+</ul>
+<pre class="r"><code>library(tidyverse) # contains ggplot2
+library(gapminder)
+
+glimpse(gapminder)</code></pre>
+<pre><code>## Observations: 1,704
+## Variables: 6
+## $ country   &lt;fct&gt; Afghanistan, Afghanistan, Afghanistan, Afghanistan, Af…
+## $ continent &lt;fct&gt; Asia, Asia, Asia, Asia, Asia, Asia, Asia, Asia, Asia, …
+## $ year      &lt;int&gt; 1952, 1957, 1962, 1967, 1972, 1977, 1982, 1987, 1992, …
+## $ lifeExp   &lt;dbl&gt; 28.801, 30.332, 31.997, 34.020, 36.088, 38.438, 39.854…
+## $ pop       &lt;int&gt; 8425333, 9240934, 10267083, 11537966, 13079460, 148803…
+## $ gdpPercap &lt;dbl&gt; 779.4453, 820.8530, 853.1007, 836.1971, 739.9811, 786.…</code></pre>
+<pre class="r"><code>p &lt;- ggplot(data = gapminder, mapping = aes(x = gdpPercap)) +
+  geom_histogram()  
+  #geom_smooth(method = &quot;lm&quot;) +
+  # scale_y_log10(limits = c(20, 90))
+
+str(p)</code></pre>
+<pre><code>## List of 9
+##  $ data       :Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;: 1704 obs. of  6 variables:
+##   ..$ country  : Factor w/ 142 levels &quot;Afghanistan&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
+##   ..$ continent: Factor w/ 5 levels &quot;Africa&quot;,&quot;Americas&quot;,..: 3 3 3 3 3 3 3 3 3 3 ...
+##   ..$ year     : int [1:1704] 1952 1957 1962 1967 1972 1977 1982 1987 1992 1997 ...
+##   ..$ lifeExp  : num [1:1704] 28.8 30.3 32 34 36.1 ...
+##   ..$ pop      : int [1:1704] 8425333 9240934 10267083 11537966 13079460 14880372 12881816 13867957 16317921 22227415 ...
+##   ..$ gdpPercap: num [1:1704] 779 821 853 836 740 ...
+##  $ layers     :List of 1
+##   ..$ :Classes &#39;LayerInstance&#39;, &#39;Layer&#39;, &#39;ggproto&#39;, &#39;gg&#39; &lt;ggproto object: Class LayerInstance, Layer, gg&gt;
+##     aes_params: list
+##     compute_aesthetics: function
+##     compute_geom_1: function
+##     compute_geom_2: function
+##     compute_position: function
+##     compute_statistic: function
+##     data: waiver
+##     draw_geom: function
+##     finish_statistics: function
+##     geom: &lt;ggproto object: Class GeomBar, GeomRect, Geom, gg&gt;
+##         aesthetics: function
+##         default_aes: uneval
+##         draw_group: function
+##         draw_key: function
+##         draw_layer: function
+##         draw_panel: function
+##         extra_params: na.rm
+##         handle_na: function
+##         non_missing_aes: xmin xmax ymin ymax
+##         optional_aes: 
+##         parameters: function
+##         required_aes: x y
+##         setup_data: function
+##         use_defaults: function
+##         super:  &lt;ggproto object: Class GeomRect, Geom, gg&gt;
+##     geom_params: list
+##     inherit.aes: TRUE
+##     layer_data: function
+##     map_statistic: function
+##     mapping: NULL
+##     position: &lt;ggproto object: Class PositionStack, Position, gg&gt;
+##         compute_layer: function
+##         compute_panel: function
+##         fill: FALSE
+##         required_aes: 
+##         reverse: FALSE
+##         setup_data: function
+##         setup_params: function
+##         type: NULL
+##         vjust: 1
+##         super:  &lt;ggproto object: Class Position, gg&gt;
+##     print: function
+##     setup_layer: function
+##     show.legend: NA
+##     stat: &lt;ggproto object: Class StatBin, Stat, gg&gt;
+##         aesthetics: function
+##         compute_group: function
+##         compute_layer: function
+##         compute_panel: function
+##         default_aes: uneval
+##         extra_params: na.rm
+##         finish_layer: function
+##         non_missing_aes: 
+##         parameters: function
+##         required_aes: x
+##         retransform: TRUE
+##         setup_data: function
+##         setup_params: function
+##         super:  &lt;ggproto object: Class Stat, gg&gt;
+##     stat_params: list
+##     super:  &lt;ggproto object: Class Layer, gg&gt; 
+##  $ scales     :Classes &#39;ScalesList&#39;, &#39;ggproto&#39;, &#39;gg&#39; &lt;ggproto object: Class ScalesList, gg&gt;
+##     add: function
+##     clone: function
+##     find: function
+##     get_scales: function
+##     has_scale: function
+##     input: function
+##     n: function
+##     non_position_scales: function
+##     scales: list
+##     super:  &lt;ggproto object: Class ScalesList, gg&gt; 
+##  $ mapping    :List of 1
+##   ..$ x: language ~gdpPercap
+##   .. ..- attr(*, &quot;.Environment&quot;)=&lt;environment: R_GlobalEnv&gt; 
+##   ..- attr(*, &quot;class&quot;)= chr &quot;uneval&quot;
+##  $ theme      : list()
+##  $ coordinates:Classes &#39;CoordCartesian&#39;, &#39;Coord&#39;, &#39;ggproto&#39;, &#39;gg&#39; &lt;ggproto object: Class CoordCartesian, Coord, gg&gt;
+##     aspect: function
+##     backtransform_range: function
+##     clip: on
+##     default: TRUE
+##     distance: function
+##     expand: TRUE
+##     is_free: function
+##     is_linear: function
+##     labels: function
+##     limits: list
+##     modify_scales: function
+##     range: function
+##     render_axis_h: function
+##     render_axis_v: function
+##     render_bg: function
+##     render_fg: function
+##     setup_data: function
+##     setup_layout: function
+##     setup_panel_params: function
+##     setup_params: function
+##     transform: function
+##     super:  &lt;ggproto object: Class CoordCartesian, Coord, gg&gt; 
+##  $ facet      :Classes &#39;FacetNull&#39;, &#39;Facet&#39;, &#39;ggproto&#39;, &#39;gg&#39; &lt;ggproto object: Class FacetNull, Facet, gg&gt;
+##     compute_layout: function
+##     draw_back: function
+##     draw_front: function
+##     draw_labels: function
+##     draw_panels: function
+##     finish_data: function
+##     init_scales: function
+##     map_data: function
+##     params: list
+##     setup_data: function
+##     setup_params: function
+##     shrink: TRUE
+##     train_scales: function
+##     vars: function
+##     super:  &lt;ggproto object: Class FacetNull, Facet, gg&gt; 
+##  $ plot_env   :&lt;environment: R_GlobalEnv&gt; 
+##  $ labels     :List of 3
+##   ..$ x     : chr &quot;gdpPercap&quot;
+##   ..$ y     : chr &quot;count&quot;
+##   ..$ weight: chr &quot;weight&quot;
+##  - attr(*, &quot;class&quot;)= chr [1:2] &quot;gg&quot; &quot;ggplot&quot;</code></pre>
+<pre class="r"><code>print(p + ggtitle(&quot;my plot&quot;))</code></pre>
+<p><img src="/490_590_2019/post/2019-09-04-lecture-notes-introduction-to-ggplot2_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p>Software Carpentry has an excellent <a href="http://swcarpentry.github.io/r-novice-gapminder/08-plot-ggplot2/index.html">lesson</a> on using ggplot2, as do the <a href="https://serialmentor.com/dataviz/">Wilke</a> and <a href="http://socviz.co/">Healey</a> textbooks.</p>
+</div>
