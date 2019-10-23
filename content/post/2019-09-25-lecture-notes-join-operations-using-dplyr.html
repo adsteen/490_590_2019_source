@@ -135,12 +135,12 @@ flights %&gt;%
   merge(flights, airlines)
 })</code></pre>
 <pre><code>##    user  system elapsed 
-##   1.141   0.043   1.185</code></pre>
+##   1.158   0.048   1.207</code></pre>
 <pre class="r"><code>system.time({
   left_join(flights, airlines)
 })</code></pre>
 <pre><code>## Joining, by = &quot;carrier&quot;</code></pre>
 <pre><code>##    user  system elapsed 
-##   0.041   0.011   0.054</code></pre>
+##   0.044   0.012   0.056</code></pre>
 <p>Wow! <code>merge()</code> usually takes more than a second, while <code>left_join()</code> is closer to 1/20 of a second! That’s a big difference!</p>
 </div>
