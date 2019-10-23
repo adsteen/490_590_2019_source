@@ -31,17 +31,17 @@ tags: []
 <li>Put some code in to filter diamonds based on the value of the slider
 <ul>
 <li>Note 1: Consider putting this code in a <strong>reactive expression</strong> using the <code>reactive()</code> function. Read more about these in <a href="https://mastering-shiny.org/basic-reactivity.html#reactive-expressions-1">Mastering Shiny</a></li>
-<li>Note 2: Keep in mind that reactive expressions don’t return the object you want - they return a function to get the object that you want. So you might end up writing code like:</li>
-</ul>
+<li><p>Note 2: Keep in mind that reactive expressions don’t return the object you want - they return a function to get the object that you want. So you might end up writing code like:</p>
 <pre><code>filtered_data &lt;- reactive({
   diamonds %&gt;%
-      filter(some code here)
+  filter(some code here)
 })</code></pre>
-<p>and then</p>
+<p>and then</p></li>
+</ul>
 <pre><code>ggplot(filtered_data(), aes_string(some code)) </code></pre>
 Note the parentheses after <code>filtered_data()</code>!</li>
 <li>Create <code>selectInput()</code>s or <code>radioButton()</code>s to choose the columns that will be mapped to x, y, and color</li>
 <li>Make the plot reactive (without a Go button)</li>
-<li><p>Make the plot so that it doesn’t react until the Go button is pressed</p></li>
+<li>Make the plot so that it doesn’t react until the Go button is pressed</li>
 </ol>
 </div>

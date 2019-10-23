@@ -28,17 +28,14 @@ tags: []
 <p>Use <code>theme()</code> to change the appearence of aspects of the plot that are not connected to data.</p>
 <ul>
 <li>There are a number of pre-built themes: <code>theme_minimal()</code>, <code>theme_classic()</code>, etc.</li>
-<li>Other users have built nifty themes as well: check the <code>ggthemes</code> <a href="https://yutannihilation.github.io/allYourFigureAreBelongToUs/ggthemes/">package</a> for things like <code>theme_economist()</code> and, for some reason, <code>theme_excel()</code>
-You can modify theme elements individually. <code>?theme</code> names all of the elements that can be modified</li>
+<li>Other users have built nifty themes as well: check the <code>ggthemes</code> <a href="https://yutannihilation.github.io/allYourFigureAreBelongToUs/ggthemes/">package</a> for things like <code>theme_economist()</code> and, for some reason, <code>theme_excel()</code> You can modify theme elements individually. <code>?theme</code> names all of the elements that can be modified</li>
 <li>Note that they are heierarchically organized: <code>text</code>, <code>axis.text</code>, <code>axis.text.x</code>, etc</li>
-<li>Each of these parameters accepts the output of an <code>element_</code> function:
-<ul>
+<li>Each of these parameters accepts the output of an <code>element_</code> function:</li>
 <li><code>element_text()</code></li>
 <li><code>element_rect()</code></li>
 <li><code>element_line()</code></li>
 <li><code>element_blank()</code> (makes the element disappear)</li>
 <li><code>element_grob()</code>, which is useful when manipulating plots at a very low level, but which you will not likely need to use.</li>
-</ul></li>
 </ul>
 <pre class="r"><code>library(tidyverse) # we&#39;re using ggplot2 and dplyr within the tidyverse
 library(gapminder)

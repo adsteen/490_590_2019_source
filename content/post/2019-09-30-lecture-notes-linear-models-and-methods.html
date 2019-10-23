@@ -133,8 +133,7 @@ print(p_hp)</code></pre>
 <li>And of course the grand-daddy useful method, <code>plot()</code>. This produces 4 plots that allow us to diagnose potential problems with our model.</li>
 </ul>
 <pre class="r"><code>plot(hp_mod)</code></pre>
-<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-1.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-2.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-3.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-4.png" width="672" />
-Here’s a nice <a href="https://data.library.virginia.edu/diagnostic-plots/">explainer</a> on these plots by Bommae Kim of the University of Virginia Library.</p>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-1.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-2.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-3.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-4.png" width="672" /> Here’s a nice <a href="https://data.library.virginia.edu/diagnostic-plots/">explainer</a> on these plots by Bommae Kim of the University of Virginia Library.</p>
 <p>We can get a full list of the methods associated with any class of objects using the <strong>sloop</strong> package:</p>
 <pre class="r"><code>lm_methods &lt;- sloop::s3_methods_class(&quot;lm&quot;)
 print(lm_methods, n = nrow(lm_methods))</code></pre>
@@ -182,8 +181,7 @@ print(lm_methods, n = nrow(lm_methods))</code></pre>
 <div id="understanding-r-formulae" class="section level2">
 <h2>Understanding R formulae</h2>
 <p>Briefly, the <code>~</code> in an R function can be read as “as a function of”. So <code>y ~ x</code> indicates an attempt to model <code>y</code> as a function of <code>x</code>. This implies a model with a slope and an intercept. Statisticians like to write this as <span class="math inline">\(y = \beta_0 + \beta_1 X_1 + \epsilon\)</span>. Normal people would write it <span class="math inline">\(y = mx + b + \epsilon\)</span>. The <span class="math inline">\(\epsilon\)</span> here represents a random error value that accounts for the fact that the real data deviate to some degree from the model predictions - <span class="math inline">\(\epsilon\)</span> accounts for the residuals.</p>
-<p>The great thing about R formulae is that it is easy to expand to more complicated models. For instance, let’s imagine that we want to model life expectancy in a country as a function of the year and the GDP per capita of the country. That is, we want to model
-<span class="math inline">\(lifeExp = \beta_1\times lifeExp + \beta_2 \times year + \beta_0 + \epsilon\)</span></p>
+<p>The great thing about R formulae is that it is easy to expand to more complicated models. For instance, let’s imagine that we want to model life expectancy in a country as a function of the year and the GDP per capita of the country. That is, we want to model <span class="math inline">\(lifeExp = \beta_1\times lifeExp + \beta_2 \times year + \beta_0 + \epsilon\)</span></p>
 <pre class="r"><code>library(gapminder)
 gap_mod &lt;- lm(lifeExp ~ year + gdpPercap, data = gapminder)</code></pre>
 <p>Easy peasy!</p>
@@ -209,8 +207,7 @@ gap_mod &lt;- lm(lifeExp ~ year + gdpPercap, data = gapminder)</code></pre>
 ## F-statistic: 661.4 on 2 and 1701 DF,  p-value: &lt; 2.2e-16</code></pre>
 <p>And look, we’ve solved the mystery of life expectancy: the p value is tiny. Model success, let’s all go home.</p>
 <pre class="r"><code>plot(gap_mod)</code></pre>
-<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-1.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-2.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-3.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-4.png" width="672" />
-Uhhh… maybe this isn’t such a good model after all. (Also note that it only had an <span class="math inline">\(r^2\)</span> value of 0.44, which means it didn’t explain most of the variation.)</p>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-1.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-2.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-3.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-4.png" width="672" /> Uhhh… maybe this isn’t such a good model after all. (Also note that it only had an <span class="math inline">\(r^2\)</span> value of 0.44, which means it didn’t explain most of the variation.)</p>
 <div id="anscombes-quartet" class="section level3">
 <h3>Anscombe’s quartet</h3>
 <p>Evaluating the quality of linear models is no joke: very different data sets can have identical linear models even when the relationships are very different. <a href="https://en.wikipedia.org/wiki/Anscombe%27s_quartet">Anscombe’s Quartet</a> is a great example of this:</p>
@@ -312,8 +309,7 @@ summary(inverse_model)</code></pre>
 ggplot(mtcars, aes(x = hp, y = qsec)) + 
   geom_point() + 
   geom_line(data = pred_df, aes(x = hp, y = qsec))</code></pre>
-<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-20-1.png" width="672" />
-Hey look this is actually a plausible way to describe these data!</p>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-20-1.png" width="672" /> Hey look this is actually a plausible way to describe these data!</p>
 </div>
 </div>
 <div id="anonymous-functions" class="section level1">

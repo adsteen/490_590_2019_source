@@ -12,20 +12,14 @@ tags: []
 <div id="types-of-color-scales-for-types-of-data" class="section level1">
 <h1>Types of color scales for types of data</h1>
 <ul>
-<li>Qualitative color scales: Data in <strong>unordered</strong> categories
-<ul>
+<li>Qualitative color scales: Data in <strong>unordered</strong> categories</li>
 <li>e.g. regions of the country (Northeast, Midwest, South)</li>
-</ul></li>
-<li>Sequential color scales: Data in an <strong>ordered</strong> variable
-<ul>
+<li>Sequential color scales: Data in an <strong>ordered</strong> variable</li>
 <li>e.g. income (continuous numeric variable ranging from $0 to some high number)</li>
-</ul></li>
-<li>Diverging color scales: Data in that <strong>diverge</strong> from some <strong>neutral</strong> midpoint
-<ul>
+<li>Diverging color scales: Data in that <strong>diverge</strong> from some <strong>neutral</strong> midpoint</li>
 <li>e.g. relative values of a continuous numeric variable compared to a mean, where negative values indicate lower than average and positive values indicate higher than average. Temperature anomolies are a common example in geoscience.</li>
 <li>Note that I don’t think Fig 4-6 in Wilke is a great example. Here, “percent of population of counties identifying as white” is mapped to a diverging color scale, with 50% as ‘neutral’. But 50% white people probably isn’t ‘neutral’ in any sense.</li>
 <li>A better example of the diverging scale is if Willke had calcualted the average fraction of the population of the whole state that identifies as white, and represented whether each county had higher or lower fraction compared to the state average.</li>
-</ul></li>
 </ul>
 <pre class="r"><code>library(dviz.supp)
 

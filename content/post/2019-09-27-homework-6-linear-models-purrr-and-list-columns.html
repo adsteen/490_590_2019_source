@@ -32,8 +32,7 @@ coef(m)
 -->
 <ol start="5" style="list-style-type: decimal">
 <li>Use the base R <code>plot()</code> function to create four diagnostic plots of the linear model.</li>
-<li>Use <strong>ggplot2</strong> to create a scatterplot of <code>qsec</code> vs <code>mpg</code> and overlay a linear regression with confidence bands.
-<!--
+<li>Use <strong>ggplot2</strong> to create a scatterplot of <code>qsec</code> vs <code>mpg</code> and overlay a linear regression with confidence bands. <!--
 
 ```r
 plot(m)
@@ -141,8 +140,7 @@ mod_df <- d %>%
 ```
 -->
 <ol start="10" style="list-style-type: decimal">
-<li>Finally add a new, numeric column to your data frame, containing the value of the slope of <code>price ~ carat</code> for each unique value of <code>clarity</code>. Hint: <code>map()</code> returns a list-column, but you want a numeric column. Look at <code>map_dbl()</code>, which returns a ‘double-precision’ (numeric) value for each list element.
-<!--
+<li>Finally add a new, numeric column to your data frame, containing the value of the slope of <code>price ~ carat</code> for each unique value of <code>clarity</code>. Hint: <code>map()</code> returns a list-column, but you want a numeric column. Look at <code>map_dbl()</code>, which returns a ‘double-precision’ (numeric) value for each list element. <!--
 
 ```r
 mod_df3 <- mod_df %>%

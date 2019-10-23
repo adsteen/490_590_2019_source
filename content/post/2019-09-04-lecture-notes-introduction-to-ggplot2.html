@@ -12,13 +12,11 @@ tags: []
 <div id="reminders" class="section level1">
 <h1>Reminders</h1>
 <ul>
-<li>We can load data from text files using <code>read.csv()</code> (base R) or <code>read_csv()</code> (tidyverse)
-<ul>
+<li>We can load data from text files using <code>read.csv()</code> (base R) or <code>read_csv()</code> (tidyverse)</li>
 <li>A csv file (“comma-separated value”) is a text file where the columns are separated by commas</li>
 <li>Because csv files are both easily machine-readable and human-readable, they are probably the best choice for storing data, unless the data files are very big or very complex. <strong>In general, you should store your data as .csv files unless you have a good reason not to.</strong></li>
 <li>Other common ways to encode tables in text files are tsv files (“tab-separated file”) or fixed width files (where each colum is given a fixed number of characters, and no particular character defines the separation between columns.)</li>
 <li>There are analogous functions to read tab separated files (<code>read_tsv()</code>, <code>read_fwf()</code>, <code>read.delim()</code>)</li>
-</ul></li>
 <li>Note that there are lots of ways to encode data other than text files, including Excel files (boo) and SQL databases (very useful for large or complicated datasets). There are R functions to read data from all of those formats.</li>
 </ul>
 </div>
@@ -27,12 +25,10 @@ tags: []
 <ul>
 <li>Base R is pretty, well, basic. Most of the power of R comes from <a href="https://cran.r-project.org/web/packages/available_packages_by_name.html">packages</a> written mostly by third parties (i.e., not the R Core Team), that add all sorts of functionality to R.</li>
 <li>In this class, we’ll focus on the <a href="https://www.tidyverse.org/">tidyverse</a> approach to data analysis. Tidyverse is a set of packages, but it is also a coherent approach to data anlysis that is valuable whatever language you’re working in.</li>
-<li><strong>ggplot2</strong> wants <em>tidy</em> data, in the form of data frames
-<ul>
+<li><strong>ggplot2</strong> wants <em>tidy</em> data, in the form of data frames</li>
 <li>1 row per observation</li>
 <li>1 column per data point descriptor</li>
 <li>Note that this is not a great format for human readibility!</li>
-</ul></li>
 <li>Sneak preview of what we’ll talk about when we get deeper into the tidyverse: use <code>tidyr::gather() and tidyr::spread()</code> to move between wide and long data formats.</li>
 </ul>
 <pre class="r"><code>library(tidyverse) # contains ggplot2
