@@ -5,6 +5,7 @@ theme = "hugo-lithium"
 googleAnalytics = ""
 disqusShortname = ""
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+publishDir = "docs"
 
 [permalinks]
     post = "/:year/:month/:day/:slug/"
@@ -38,7 +39,9 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
     MathJaxVersion = "2.7.5"
 
     # path to the favicon, under "static"
-    favicon = "lab_logo_aidia_2016_xgC_icon.ico"
+    favicon = "lab_logo_aidia_2016.ico"
+
+
 
     [params.logo]
     url = "lab_logo_Aidia_2016.png"
@@ -46,5 +49,4 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
     height = 50
     alt = "Logo"
 
-    publishDir = "docs"
 
