@@ -1,0 +1,145 @@
+---
+title: 'Lecture notes: Functions, if/then, stop, try/catch'
+author: ~
+date: '2019-10-04'
+slug: lecture-notes-functions-if-then-stop-try-catch
+categories: []
+tags: []
+---
+
+
+
+<div id="resources" class="section level1">
+<h1>Resources</h1>
+<ul>
+<li>Functions: Advanced R <a href="https://adv-r.hadley.nz/functions.html">Chapter 6</a></li>
+<li>I’ve decided not to talk a lot about environments, but if you want to build a package, it may help you to read about environments in Advanced R <a href="https://adv-r.hadley.nz/environments.html">Chapter 7</a></li>
+<li><a href="http://mazamascience.com/WorkingWithData/?p=912">This handy-dandy blog post</a> about <code>tryCatch()</code> that is way more informative than the help page.</li>
+</ul>
+</div>
+<div id="functions" class="section level1">
+<h1>Functions</h1>
+<ul>
+<li>Reminder: we create a function with the <code>function()</code> function</li>
+<li>Parameters, default values</li>
+</ul>
+<div id="debugging" class="section level2">
+<h2>Debugging</h2>
+<ul>
+<li><code>print()</code></li>
+<li><code>browser()</code></li>
+</ul>
+</div>
+<div id="errors-warnings-and-messages" class="section level2">
+<h2>Errors, warnings, and messages</h2>
+<ul>
+<li><code>stop()</code>, <code>warning()</code>, <code>message()</code>
+(now, why would we want to catch errors?)</li>
+</ul>
+</div>
+<div id="parameter-checking-with-ifelse" class="section level2">
+<h2>Parameter checking with if/else</h2>
+<pre class="r"><code>example_fun &lt;- function(x) {
+  x + 3
+}
+example_fun(&quot;a&quot;)</code></pre>
+<pre><code>## Error in x + 3: non-numeric argument to binary operator</code></pre>
+<pre class="r"><code>example_fun_better &lt;- function(x) {
+  if(!is.numeric(x)) { # remember ! means &quot;not&quot;
+    warning(&quot;The argument x is not numeric&quot;)
+    result &lt;- NA
+  } else {
+    # This bit only runs if x is not, not numeric (i.e. if it is numeric)
+    x + 3
+  }
+}
+
+logical.vec &lt;- c(TRUE, FALSE, FALSE)
+x &lt;- example_fun_better(logical.vec);</code></pre>
+<pre><code>## Warning in example_fun_better(logical.vec): The argument x is not numeric</code></pre>
+<pre class="r"><code>x</code></pre>
+<pre><code>## [1] NA</code></pre>
+<p>Note that you can use <code>switch()</code> if you expect one of a few inputs (e.g., you could do different things in the function above if the )</p>
+</div>
+<div id="error-trapping-with-trycatch" class="section level2">
+<h2>Error trapping with try/catch</h2>
+<p>Error trapping allows a function to “trap” an error and do things like change the error message to something more informative, or (perhaps more usefully) to return something like NA that will keep the rest of your code from tripping up.</p>
+<pre class="r"><code>my_fun &lt;- function(x) {
+  result &lt;- tryCatch({
+    x + 3
+    }, error = function(e) stop(&quot;There was some kind of error&quot;)
+  )
+  result
+}
+
+
+
+char_combine &lt;- function(x1, x2) {
+  result = tryCatch({
+    c(x1, x2)
+  }, warning = function(w) {
+    warning(&quot;I&#39;m only going to warn you once&quot;)
+  }, error = function(e) {
+    warning(&quot;R tried to throw an error, but I&#39;ve got your back&quot;)
+  }, finally = {
+    result = NA
+  })
+  result
+}</code></pre>
+</div>
+<div id="a-real-ish-example" class="section level2">
+<h2>A real-ish example</h2>
+<p>Let’s imagine that the mtcars data set had included the <a href="https://fastestlaps.com/models/volvo-v70-r">Volvo V70R</a>, which has a 5-cylinder engine. I’ll create <code>mtcars_alt</code> with that data (and with the name of the car as a column, rather than as rownames).</p>
+<pre class="r"><code>library(tidyverse)
+
+new_row &lt;- data.frame(mpg = 23, cyl = 5, disp = 153, hp = 295, drat = NA, wt = 3.929, qsec = NA, vs = 0, am = 1, gear = 6, carb = 0, make.model = &quot;Volvo V70R&quot;)
+
+mtcars_alt &lt;- mtcars %&gt;%
+  mutate(make.model = rownames(mtcars)) %&gt;%
+  rbind(new_row)
+tail(mtcars_alt)</code></pre>
+<pre><code>##     mpg cyl  disp  hp drat    wt qsec vs am gear carb     make.model
+## 28 30.4   4  95.1 113 3.77 1.513 16.9  1  1    5    2   Lotus Europa
+## 29 15.8   8 351.0 264 4.22 3.170 14.5  0  1    5    4 Ford Pantera L
+## 30 19.7   6 145.0 175 3.62 2.770 15.5  0  1    5    6   Ferrari Dino
+## 31 15.0   8 301.0 335 3.54 3.570 14.6  0  1    5    8  Maserati Bora
+## 32 21.4   4 121.0 109 4.11 2.780 18.6  1  1    4    2     Volvo 142E
+## 33 23.0   5 153.0 295   NA 3.929   NA  0  1    6    0     Volvo V70R</code></pre>
+<p>OK, now that the data is set up, let’s imagine that we’d like to create a linear model for <code>qsec</code> vs <code>hp</code>, for each unique number of cylinders. This is going to be a problem, since there is only one 5-cylinder car, we don’t know what it’s quarter second time (<code>qsec</code>) is. So we want to write a function that will create a linear model but return NA in case the linear model doesn’t work.</p>
+<p>We’ll write a similar function to get the slope from a linear model, but return NA if that function doesn’t work.</p>
+<pre class="r"><code>safe_lm &lt;- function(x) {
+  my_lm &lt;- tryCatch({
+    lm(qsec ~ hp, data = x)
+  }, error = function(e) {
+    warning(paste(&quot;An error was ignored:&quot;, e))
+    NA # If an error is thrown, NA will be assigned to my_lm
+  })
+  my_lm
+}
+
+safe_slope &lt;- function(x) {
+  slope &lt;- tryCatch({
+    coef(x)[2]
+  }, error = function(e) {
+    # I&#39;m not going to bother to have this one do anything with the error message
+    NA
+  })
+  slope
+}
+
+mtcars_alt &lt;- mtcars_alt %&gt;%
+  group_by(cyl) %&gt;%
+  nest() %&gt;%
+  mutate(lms = map(data, safe_lm),
+         slopes = map_dbl(lms, safe_slope))</code></pre>
+<pre><code>## Warning in value[[3L]](cond): An error was ignored: Error in lm.fit(x, y, offset = offset, singular.ok = singular.ok, ...): 0 (non-NA) cases</code></pre>
+<p>Now we can do something complicated, like look at the relationship between the slope of qsec vs horsepower as a function of the number of cylinders:</p>
+<pre class="r"><code>ggplot(mtcars_alt, aes(x=cyl, y = slopes)) + 
+  geom_point() + 
+  geom_smooth(method = &quot;lm&quot;, se = FALSE)</code></pre>
+<pre><code>## Warning: Removed 1 rows containing non-finite values (stat_smooth).</code></pre>
+<pre><code>## Warning: Removed 1 rows containing missing values (geom_point).</code></pre>
+<p><img src="/490_590_2019/post/2019-10-04-lecture-notes-functions-if-then-stop-try-catch_files/figure-html/unnamed-chunk-6-1.png" width="672" />
+(Turns out there isn’t much of a relationship).</p>
+</div>
+</div>

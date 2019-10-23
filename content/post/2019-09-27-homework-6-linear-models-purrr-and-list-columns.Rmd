@@ -1,0 +1,84 @@
+---
+title: 'Homework 6: linear models, purrr, and list-columns'
+author: ~
+date: '2019-09-27'
+slug: homework-6-linear-models-purrr-and-list-columns
+categories: []
+tags: []
+---
+
+# Linear models
+
+1. Using the `mtcars` data frame, create a linear model of `qsec` (quarter mile time in seconds) as a function of `mpg` (miles per gallon). `qsec` should be the dependant variable, and `mpg` is the independant variable.
+2. Use the `coef()` function to extract the coefficients
+3. Use the `summary()` function to view the coefficients
+4. Obtain the coefficients directly from the model object, using what you know about subsetting lists.
+
+<!--
+```{r, message = FALSE}
+library(tidyverse)
+m <- lm(qsec ~ mpg, data = mtcars)
+coef(m)
+```
+-->
+
+5. Use the base R `plot()` function to create four diagnostic plots of the linear model.
+6. Use **ggplot2** to create a scatterplot of `qsec` vs `mpg` and overlay a linear regression with confidence bands.
+<!--
+```{r}
+plot(m)
+```
+-->
+7.  Load ggplot2, which contains the `diamonds` data set. 
+    a. Use the `lm()` function to create a linear model of `price` as a function of `depth` and `carat` (both of which are continuous variables). Look at the `summary()` of that linear model object.
+    b. Use `lm()` to create a linear model of price as a functionof `carat` (a continuous variable) and `clarity` (a factor). Look at the summary. How is it different?
+
+<!--
+
+```{r, message = FALSE}
+lm(price ~ depth + carat, data = diamonds) %>%
+  summary()
+lm(price ~ carat + clarity, data = diamonds) %>%
+  summary()
+```
+-->
+
+    
+# **purrr** and list-columns
+    
+8. Use **purrr** to create a nested data frame with a list-column that contains a linear model of `price ~ carat` for each unique value of `clarity`.
+9. Next, add a column to that list that contains the slope of the relationship between `price` and `carat` for each unqiue value of `clarity`. Note that you will need to either
+    a. Define a function to create the specific kind of linear models you want to make first, and then use `purrr::map()` to apply that function to each row of the nested data frame .
+    b. Use `purrr::map()` with an anonymous function, defined inside the `map()` function call
+    
+<!--
+```{r, message = FALSE}
+library(purrr)
+d <- diamonds %>%
+  group_by(clarity) %>%
+  nest() #%>%
+
+mod_fun <- function(df){
+  lm(price ~ carat, data = df) 
+}
+ 
+mod_df2 <- d %>%
+  mutate(lin_mod = map(data, function(x) lm(price ~ carat, data = x)))
+
+mod_df <- d %>% 
+  mutate(lin_mod = map(data, mod_fun))
+```
+-->
+
+10. Finally add a new, numeric column to your data frame, containing the value of the slope of `price ~ carat` for each unique value of `clarity`. Hint: `map()` returns a list-column, but you want a numeric column. Look at `map_dbl()`, which returns a 'double-precision' (numeric) value for each list element.
+<!--
+```{r}
+mod_df3 <- mod_df %>%
+  mutate(slopes = map_dbl(lin_mod, function(x) coefficients(x)[2]))
+```
+-->
+
+
+
+
+

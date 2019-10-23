@@ -1,0 +1,194 @@
+---
+title: 'Lecture notes: Subsetting and working with data frames'
+author: ~
+date: '2019-09-17'
+slug: lecture-notes-subsetting-and-working-with-data-frames
+categories: []
+tags: []
+---
+
+# Resources
+
+## Split-apply-combine
+
+* [Original paper](https://www.jstatsoft.org/article/view/v040i01) (although note that the package that paper describes, **plyr**, has been replaced by the tidyverse package **dplyr**, which has totally different syntax.)
+* Software Carpentry lessons:
+    * [Split-apply-combine conceptual introduction](https://swcarpentry.github.io/swc-releases/2016.06/r-novice-gapminder/12-plyr/) 
+    * [Implementation in **dplyr**](http://swcarpentry.github.io/r-novice-gapminder/13-dplyr/index.html)
+    * Note that, for some reason, the first Software Carpentry lesson is in **plyr** and the second is is in **dplyr**. This really makes no sense, as **dplyr** is the replacement for **plyr** - you're not supposed to use them at the same time, and indeed loading them at the same time will cause some [really weird stuff](https://github.com/tidyverse/dplyr/issues/347) to happen. So don't do it.
+
+## Factors
+
+* [Software Carpentry](http://swcarpentry.github.io/r-novice-gapminder/04-data-structures-part1/index.html#factors)
+* [Hands-On Programming with R](https://rstudio-education.github.io/hopr/r-objects.html#factors)
+* [Advanced R](https://adv-r.hadley.nz/vectors-chap.html#s3-atomic-vectors)
+
+## Subsetting
+* [Software Carpentry](http://swcarpentry.github.io/r-novice-gapminder/06-data-subsetting/index.html)
+* [HOPR on modifying values](https://rstudio-education.github.io/hopr/modify.html)
+* [Advanced R, Chapter 4](https://adv-r.hadley.nz/subsetting.html)
+
+
+# Split-apply-combine
+
+The underlying idea behind the tidyverse is the "split-apply-combine" philosophy, as described by Hadley Wickham [here](https://www.jstatsoft.org/article/view/v040i01) 
+
+The basic idea is simple: virtually every data analysis pipeline can be understood as consisting of the following steps:
+
+1. **Split** the data into groups (for instance, sites, individual samples, experimental treatments, etc.)
+2. **Apply** some analytical procedure. This could be as simple as measuring an average value, or it could be some complex operation that requires many lines of code.
+3. **Combine** the results of the analytical procedure, to allow comparisons among groups.
+
+The tidyverse encourages us to think about data analysis using this paradigm, and makes it quite easy to implement. We'll spend the next few weeks learning how to implement this.
+
+The tidyverse is almost like a separate language - if you want, you could almost implement your whole data analytic pipeline using tidyverse syntax, without using any base R.
+
+Almost, but not quite. Base R is still very useful in a lot of situations. Also, the tidyverse is relatively new, not everyone likes it better than base R, and there's a lot of code out there written in base R that you may want to reuse, study, or modify.
+
+So today we're reviewing/expanding on some of the subsetting concepts we talked about at the start of the class. Then we'll move on to implementing the split-apply-combine philosophy in the tidyverse, and from there move out to many of the other cool things you can do in tidyverse.
+
+# Factors
+
+This is taken from the Software Carpentry gapminder [lesson 5](http://swcarpentry.github.io/r-novice-gapminder/05-data-structures-part2/index.html#factors).
+
+```{r, message = FALSE}
+# re-create the cats data frame from a few weeks ago
+cats <- data.frame(
+  coat = as.factor(c("calico", "black", "tabby", NA)), # note I'm forcing hte data type, just to be sure
+  weight = c(2.1, 5.0, 3.2, 3.3),
+  likes_string = as.integer(c(1, 0, 1, 1)),
+  age = c(2, 3, 5, 9)
+)
+```
+
+Factors are funny: they look like character vectors, but they are actually integer vectors where each integer carries a label. We call the set of labels the 'levels' of the factor. The levels are coded as "attributes" of the integer vector.
+
+```{r, message = FALSE}
+attr(cats$coat, "levels")
+```
+
+Note that we can't just append a new value to a factor, the way we could with a character vector. Instead, we need to first define the new level, which assigns the new label to a new integer in the factor's attributes. Then, we add the element to the factor itself. Even though say that we're adding `"tortioseshell"`, R is actually adding the integer 4, because the label "tortioseshell" is associated with the integer 4 in the factor.
+
+Notice that we can add rows to a data frame using the `rbind()` function (i.e., "row bind"), if we define the new row as a list.
+
+```{r}
+# add a new level
+levels(cats$coat) <- c(levels(cats$coat), "tortoiseshell") # First we define the new level
+cats <- rbind(cats, list("tortoiseshell", 3.3, TRUE, 9)) # Second we add a new row, as a list, to the data frame
+cats
+```
+
+
+We could just as well define the new row as a data frame, in which case we have to explicitly create the row names of the new data frame, which must match the row names of the old data frame precisely.
+
+```{r, message=FALSE}
+cats <- rbind(cats, data.frame(coat = "tortoiseshell", 
+                               weight = 3.3,
+                               likes_string = TRUE,
+                               age = 9))
+
+# cats$coat <- as.character(cats$coat)
+```
+Note that `as.numeric()` works for factors, but not for character vectors:
+```{r, message=FALSE}
+as.numeric(cats$coat)
+```
+
+```{r, message=FALSE}
+as.numeric(c("calico", "black", "tabby", NA))
+```
+
+## Getting rid of factors
+
+In general we want to avoid working with factors as possible. `as.character()` is great here:
+
+```{r}
+as.character(cats$coat)
+```
+
+If we use `read.csv()` (or its cousins `read.table()`, `read.delim()`, etc.) to read data from a text file, we will want to override the default parameter that reads columns containing only characters (aka 'strings') as a factor:
+```{r}
+gapminder <- read.csv("../../data/gapminder_data.csv", stringsAsFactors = FALSE) # Note that my directory structure is a bit different from yours because of the way I build a website using this code
+str(gapminder)
+```
+
+
+# Subsetting
+
+Elements of a data frame are *indexed* by their rows first, and then columns. A blank space indicates "all of the elements", So, `cats[4, ]` gives us all of the columns of the 4th row of `cats`. 
+```{r}
+cats[4, ]
+```
+
+We can remove rows using negative subscripts
+```{r}
+cats[-4, ]
+```
+
+And we can specify multiple rows or columns with a vector.
+```{r}
+cats <- cats[c(-4, -5), ]
+```
+
+One very useful bit of syntax is to specify a range of rows or columns using the `:` operator, which creates a vector of integers:
+
+```{r}
+1:3
+```
+
+This shows up in subsetting quite frequently:
+
+```{r}
+cats[ , 1:3]
+```
+
+## Subsetting with indices vs. booleans
+
+There are three major ways to subset an object in R:
+
+* Subsetting by index 
+* Subsetting by name
+* Subsetting by condition
+
+(Note that [Advanced R](https://adv-r.hadley.nz/subsetting.html) breaks out 6 different ways to subset, and organizes those ways a little different to what I've done. Hadley is of course more precisely correct, but I think what I'm describing is a little easier to understand and covers most practical needs.)
+
+### Subsetting by index
+
+Above, we subsetted by index: if we want columns 1 through 3 of `cats`, we use brackets to ask for all the columns and the *column indices* 1 through 3.
+
+```{r}
+cats[ , 1:3]
+```
+
+### Subsetting by name
+
+We could also ask for the elements by name. **This is often a better idea than subsetting by index**, especially with columns of data frames, because we can be sure of what we're getting - i.e., we don't have to worry about whether the columns got rearranged without us noticing:
+
+```{r}
+cats[ , c("weight", "likes_string", "age")]
+```
+
+This is similar to subsetting a column of a data frame using the `$` sign (e.g., `cats$weight`) but note that when we use `[]` we put the name of the element we want in quotation marks, and with `$` we don't.
+
+### Subsetting by condition
+
+Condition, here, means logicals, i.e., TRUE or FALSE. It is often the case that we want only the data that satisfies some condition. Here we pass a vector of TRUEs and FALSEs, and we get back all the elements that correspond to a TRUE.
+
+```{r}
+cats[ , c(FALSE, FALSE, TRUE, TRUE)]
+```
+
+Of course we almost never generate that vector of logicals manually - most often, we generate it using a boolean expression, i.e., an expression that returns either TRUE or FALSE. So for example,
+```{r}
+to.drop <- names(cats) %in% c("age", "likes_string")
+cats[ , !to.drop]
+```
+Note that `!` means 'not'; it turns all the TRUEs to FALSEs and vice-versa.
+
+Another common use would be to pick out all the rows that satisfy some condition. Say, for instance, we wanted all the rows for cats that weigh more than 3 pounds:
+
+```{r}
+cats[cats$weight > 3, ]
+```
+
+That works because `cats$weight > 3` returns a vector with as many elements as there are elements in `cats$weight`, with TRUE for elements that are greater than 3 and FALSE otherwise. 

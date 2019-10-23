@@ -1,0 +1,14 @@
+---
+title: 'Lecture notes: Shiny 2'
+author: ~
+date: '2019-10-23'
+slug: lecture-notes-shiny-2
+categories: []
+tags: []
+---
+
+# Resources
+
+The this is the set of notes for the classroom exercise of building a shiny app that dynamically creates plots of the diamonds data set.
+
+The final 

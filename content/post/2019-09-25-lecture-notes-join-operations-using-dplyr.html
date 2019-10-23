@@ -1,0 +1,146 @@
+---
+title: 'Lecture notes: Join operations using dplyr'
+author: ~
+date: '2019-09-25'
+slug: lecture-notes-join-operations-using-dplyr
+categories: []
+tags: []
+---
+
+
+
+<div id="resources" class="section level1">
+<h1>Resources</h1>
+<ul>
+<li>The “two-table verbs” <a href="https://cran.r-project.org/web/packages/dplyr/vignettes/two-table.html">vignette</a> for <strong>dplyr</strong>.
+<ul>
+<li><strong>Note:</strong> a vignette is a how-to guide for a package, and any reputable package will have one. A vignette complements the function documentation by demonstrating how you might use the package in real life, with concrete examples.</li>
+</ul></li>
+<li>The <a href="https://r4ds.had.co.nz/relational-data.html">relational data</a> chapter in R for Data Science.</li>
+</ul>
+<p>To learn about joining data frames, we’ll use the data sets in the <strong>nycflights13</strong> package. The value of this data set is that <code>flights</code> is big: 336,776 rows!</p>
+<pre class="r"><code>library(nycflights13)
+library(tidyverse)
+
+# let&#39;s look at the data sets
+glimpse(flights)</code></pre>
+<pre><code>## Observations: 336,776
+## Variables: 19
+## $ year           &lt;int&gt; 2013, 2013, 2013, 2013, 2013, 2013, 2013, 2013, 2…
+## $ month          &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
+## $ day            &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
+## $ dep_time       &lt;int&gt; 517, 533, 542, 544, 554, 554, 555, 557, 557, 558,…
+## $ sched_dep_time &lt;int&gt; 515, 529, 540, 545, 600, 558, 600, 600, 600, 600,…
+## $ dep_delay      &lt;dbl&gt; 2, 4, 2, -1, -6, -4, -5, -3, -3, -2, -2, -2, -2, …
+## $ arr_time       &lt;int&gt; 830, 850, 923, 1004, 812, 740, 913, 709, 838, 753…
+## $ sched_arr_time &lt;int&gt; 819, 830, 850, 1022, 837, 728, 854, 723, 846, 745…
+## $ arr_delay      &lt;dbl&gt; 11, 20, 33, -18, -25, 12, 19, -14, -8, 8, -2, -3,…
+## $ carrier        &lt;chr&gt; &quot;UA&quot;, &quot;UA&quot;, &quot;AA&quot;, &quot;B6&quot;, &quot;DL&quot;, &quot;UA&quot;, &quot;B6&quot;, &quot;EV&quot;, &quot;…
+## $ flight         &lt;int&gt; 1545, 1714, 1141, 725, 461, 1696, 507, 5708, 79, …
+## $ tailnum        &lt;chr&gt; &quot;N14228&quot;, &quot;N24211&quot;, &quot;N619AA&quot;, &quot;N804JB&quot;, &quot;N668DN&quot;,…
+## $ origin         &lt;chr&gt; &quot;EWR&quot;, &quot;LGA&quot;, &quot;JFK&quot;, &quot;JFK&quot;, &quot;LGA&quot;, &quot;EWR&quot;, &quot;EWR&quot;, …
+## $ dest           &lt;chr&gt; &quot;IAH&quot;, &quot;IAH&quot;, &quot;MIA&quot;, &quot;BQN&quot;, &quot;ATL&quot;, &quot;ORD&quot;, &quot;FLL&quot;, …
+## $ air_time       &lt;dbl&gt; 227, 227, 160, 183, 116, 150, 158, 53, 140, 138, …
+## $ distance       &lt;dbl&gt; 1400, 1416, 1089, 1576, 762, 719, 1065, 229, 944,…
+## $ hour           &lt;dbl&gt; 5, 5, 5, 5, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 6…
+## $ minute         &lt;dbl&gt; 15, 29, 40, 45, 0, 58, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+## $ time_hour      &lt;dttm&gt; 2013-01-01 05:00:00, 2013-01-01 05:00:00, 2013-0…</code></pre>
+<pre class="r"><code>glimpse(airlines)</code></pre>
+<pre><code>## Observations: 16
+## Variables: 2
+## $ carrier &lt;chr&gt; &quot;9E&quot;, &quot;AA&quot;, &quot;AS&quot;, &quot;B6&quot;, &quot;DL&quot;, &quot;EV&quot;, &quot;F9&quot;, &quot;FL&quot;, &quot;HA&quot;, &quot;M…
+## $ name    &lt;chr&gt; &quot;Endeavor Air Inc.&quot;, &quot;American Airlines Inc.&quot;, &quot;Alaska A…</code></pre>
+<p>Note that <code>flights</code> and <code>airlines</code> share a single variable, <code>carrier</code>. You can guess that we could add the carrier names to <code>flights</code> by joining the two data frames, by matching values of the <code>carrier</code> column in <code>flights</code> to the <code>carrier</code> column in <code>airlines</code>.</p>
+<p>Let’s get rid of a few of the columns of flight for clarity, and do that join.</p>
+<pre class="r"><code>flights2 &lt;- flights %&gt;%
+  select(year:day, hour, origin, dest, tailnum, carrier)
+
+flights2 %&gt;%
+  left_join(airlines) %&gt;%
+  glimpse()</code></pre>
+<pre><code>## Joining, by = &quot;carrier&quot;</code></pre>
+<pre><code>## Observations: 336,776
+## Variables: 9
+## $ year    &lt;int&gt; 2013, 2013, 2013, 2013, 2013, 2013, 2013, 2013, 2013, 20…
+## $ month   &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
+## $ day     &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
+## $ hour    &lt;dbl&gt; 5, 5, 5, 5, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 6, 6, 6,…
+## $ origin  &lt;chr&gt; &quot;EWR&quot;, &quot;LGA&quot;, &quot;JFK&quot;, &quot;JFK&quot;, &quot;LGA&quot;, &quot;EWR&quot;, &quot;EWR&quot;, &quot;LGA&quot;, …
+## $ dest    &lt;chr&gt; &quot;IAH&quot;, &quot;IAH&quot;, &quot;MIA&quot;, &quot;BQN&quot;, &quot;ATL&quot;, &quot;ORD&quot;, &quot;FLL&quot;, &quot;IAD&quot;, …
+## $ tailnum &lt;chr&gt; &quot;N14228&quot;, &quot;N24211&quot;, &quot;N619AA&quot;, &quot;N804JB&quot;, &quot;N668DN&quot;, &quot;N3946…
+## $ carrier &lt;chr&gt; &quot;UA&quot;, &quot;UA&quot;, &quot;AA&quot;, &quot;B6&quot;, &quot;DL&quot;, &quot;UA&quot;, &quot;B6&quot;, &quot;EV&quot;, &quot;B6&quot;, &quot;A…
+## $ name    &lt;chr&gt; &quot;United Air Lines Inc.&quot;, &quot;United Air Lines Inc.&quot;, &quot;Ameri…</code></pre>
+<p>We did not explicitly specify which column we should join by, but R has noticed that the two data frames share a single column, <code>carrier</code>, and has used that column to make the join.</p>
+<p>Imagine that the two matching columns had different names, but the same information. We would have to specify which columns are common between the data frames.</p>
+<pre class="r"><code># Rename the &#39;carrier&#39; column of flights to &#39;airline.code&#39;
+flights2 &lt;- flights2 %&gt;%
+  rename(airline.code = carrier)
+
+left_joined_data &lt;- flights2 %&gt;%
+  left_join(airlines, by = c(&quot;airline.code&quot; = &quot;carrier&quot;))
+glimpse(left_joined_data)</code></pre>
+<pre><code>## Observations: 336,776
+## Variables: 9
+## $ year         &lt;int&gt; 2013, 2013, 2013, 2013, 2013, 2013, 2013, 2013, 201…
+## $ month        &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
+## $ day          &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
+## $ hour         &lt;dbl&gt; 5, 5, 5, 5, 6, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 6, …
+## $ origin       &lt;chr&gt; &quot;EWR&quot;, &quot;LGA&quot;, &quot;JFK&quot;, &quot;JFK&quot;, &quot;LGA&quot;, &quot;EWR&quot;, &quot;EWR&quot;, &quot;L…
+## $ dest         &lt;chr&gt; &quot;IAH&quot;, &quot;IAH&quot;, &quot;MIA&quot;, &quot;BQN&quot;, &quot;ATL&quot;, &quot;ORD&quot;, &quot;FLL&quot;, &quot;I…
+## $ tailnum      &lt;chr&gt; &quot;N14228&quot;, &quot;N24211&quot;, &quot;N619AA&quot;, &quot;N804JB&quot;, &quot;N668DN&quot;, &quot;…
+## $ airline.code &lt;chr&gt; &quot;UA&quot;, &quot;UA&quot;, &quot;AA&quot;, &quot;B6&quot;, &quot;DL&quot;, &quot;UA&quot;, &quot;B6&quot;, &quot;EV&quot;, &quot;B6…
+## $ name         &lt;chr&gt; &quot;United Air Lines Inc.&quot;, &quot;United Air Lines Inc.&quot;, &quot;…</code></pre>
+<p>As it happens, the set of “carriers” in <code>flights</code> and <code>airlines</code> is identical.</p>
+<pre class="r"><code>unique(airlines$carrier)</code></pre>
+<pre><code>##  [1] &quot;9E&quot; &quot;AA&quot; &quot;AS&quot; &quot;B6&quot; &quot;DL&quot; &quot;EV&quot; &quot;F9&quot; &quot;FL&quot; &quot;HA&quot; &quot;MQ&quot; &quot;OO&quot; &quot;UA&quot; &quot;US&quot; &quot;VX&quot;
+## [15] &quot;WN&quot; &quot;YV&quot;</code></pre>
+<pre class="r"><code>sort(unique(flights$carrier)) </code></pre>
+<pre><code>##  [1] &quot;9E&quot; &quot;AA&quot; &quot;AS&quot; &quot;B6&quot; &quot;DL&quot; &quot;EV&quot; &quot;F9&quot; &quot;FL&quot; &quot;HA&quot; &quot;MQ&quot; &quot;OO&quot; &quot;UA&quot; &quot;US&quot; &quot;VX&quot;
+## [15] &quot;WN&quot; &quot;YV&quot;</code></pre>
+<p><em>(Side note: I used <code>sort()</code> to arrange the <code>flights</code> data into alphabetical order in order to make the comparison clearer. Note how we can call a bunch of functions in a row by placing them in nested parentheses: the above statement reads as &quot;get the <code>carrier</code> vector from <code>flights</code>, find the unique values, and then sort them. However, even a few nested functions become pretty difficult to read. This is exactly the problem that piping solves.)</em></p>
+<p>Let’s add a new, fake airline, <a href="https://en.wikipedia.org/wiki/Soul_Plane">“Nashawn Wade Airlines”</a>, code “NW”. We’ll add this to <code>airlines</code>, and look at the effect of different kinds of joins.</p>
+<pre class="r"><code>airlines_mod &lt;- rbind(airlines, list(&quot;NW&quot;, &quot;Nashawn Wade Airlines&quot;))
+
+flights %&gt;% 
+  left_join(airlines_mod) %&gt;%
+  nrow()</code></pre>
+<pre><code>## Joining, by = &quot;carrier&quot;</code></pre>
+<pre><code>## [1] 336776</code></pre>
+<p>Now try a right join:</p>
+<pre class="r"><code>flights %&gt;% 
+  right_join(airlines_mod) %&gt;%
+  nrow()</code></pre>
+<pre><code>## Joining, by = &quot;carrier&quot;</code></pre>
+<pre><code>## [1] 336777</code></pre>
+<p>Aha! An extra row. Just to be sure, we’ll look at the last row. This is the row that corresponds to carrier “NW”:</p>
+<pre class="r"><code>flights %&gt;% 
+  right_join(airlines_mod) %&gt;%
+  filter(carrier == &quot;NW&quot;)</code></pre>
+<pre><code>## Joining, by = &quot;carrier&quot;</code></pre>
+<pre><code>## # A tibble: 1 x 20
+##    year month   day dep_time sched_dep_time dep_delay arr_time
+##   &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt;          &lt;int&gt;     &lt;dbl&gt;    &lt;int&gt;
+## 1    NA    NA    NA       NA             NA        NA       NA
+## # … with 13 more variables: sched_arr_time &lt;int&gt;, arr_delay &lt;dbl&gt;,
+## #   carrier &lt;chr&gt;, flight &lt;int&gt;, tailnum &lt;chr&gt;, origin &lt;chr&gt;, dest &lt;chr&gt;,
+## #   air_time &lt;dbl&gt;, distance &lt;dbl&gt;, hour &lt;dbl&gt;, minute &lt;dbl&gt;,
+## #   time_hour &lt;dttm&gt;, name &lt;chr&gt;</code></pre>
+<p>All the data are <code>NA</code>, except for <code>carrier</code> and <code>name</code>.</p>
+<p>What would happen if you did a <code>full_join()</code>? How about an <code>anti_join()</code></p>
+</div>
+<div id="speed" class="section level1">
+<h1>Speed</h1>
+<p>There is a base R function to join data frames called <code>merge()</code>. It is <strong>really</strong> inefficient! Let’s use the <code>system.time()</code> function to see how long each of these functions takes to execute. (This is a pretty rough-and-ready way to see how fast commands execute - the answers will depend on your computer and what else your computer is trying to do at the moment - but roughly speaking, the <code>User</code> column is the actual amount of time your computer spent executing the code).</p>
+<pre class="r"><code>system.time({
+  merge(flights, airlines)
+})</code></pre>
+<pre><code>##    user  system elapsed 
+##   1.141   0.043   1.185</code></pre>
+<pre class="r"><code>system.time({
+  left_join(flights, airlines)
+})</code></pre>
+<pre><code>## Joining, by = &quot;carrier&quot;</code></pre>
+<pre><code>##    user  system elapsed 
+##   0.041   0.011   0.054</code></pre>
+<p>Wow! <code>merge()</code> usually takes more than a second, while <code>left_join()</code> is closer to 1/20 of a second! That’s a big difference!</p>
+</div>

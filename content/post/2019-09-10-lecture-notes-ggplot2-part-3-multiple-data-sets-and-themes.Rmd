@@ -1,0 +1,98 @@
+---
+title: 'Lecture notes: ggplot2 part 3, multiple data sets and themes'
+author: ~
+date: '2019-09-10'
+slug: lecture-notes-ggplot2-part-3-multiple-data-sets-and-themes
+categories: []
+tags: []
+---
+
+# Good style for writing ggplot code
+**ggplot2** can be though of as building a plot from layers (data, then mappings, then geoms, etc...) so our code should reflect this. 
+
+Accordingly, we should write the code in a specific order:
+
+1. `ggplot()` call
+2. geoms (note that each geom is plotted on top of the previous one)
+3. stats
+4. scales
+5. facets
+6. themes and `ggtitle()`
+
+**ggplot2** requires that the `ggplot` function comes first, but after that it will allow you to write the plot in any order. However, the code will be much more readable if you write it in the order described above.
+
+# ggplot2 Appearance
+
+Use `theme()` to change the appearence of aspects of the plot that are not connected to data.
+
+* There are a number of pre-built themes: `theme_minimal()`, `theme_classic()`, etc.
+* Other users have built nifty themes as well: check the `ggthemes` [package](https://yutannihilation.github.io/allYourFigureAreBelongToUs/ggthemes/) for things like `theme_economist()` and, for some reason, `theme_excel()`
+You can modify theme elements individually. `?theme` names all of the elements that can be modified
+* Note that they are heierarchically organized: `text`, `axis.text`, `axis.text.x`, etc
+* Each of these parameters accepts the output of an `element_` function:
+  * `element_text()`
+  * `element_rect()`
+  * `element_line()`
+  * `element_blank()` (makes the element disappear)
+  * `element_grob()`, which is useful when manipulating plots at a very low level, but which you will not likely need to use.
+  
+```{r, message = FALSE}
+library(tidyverse) # we're using ggplot2 and dplyr within the tidyverse
+library(gapminder)
+
+ggplot(gapminder, aes(x = year, y = lifeExp, colour = continent, group  = country)) + 
+  geom_line() + 
+  facet_wrap(~ continent) +
+  theme_minimal() + 
+  theme(text = element_text(family = "Times"),
+        axis.line.y = element_line(colour = "red", linetype = 3))
+```
+  
+# Plotting multiple data sets on one plot
+
+It may be important to plot multiple data sets on one plot. Most often I do this when I want to plot summary data on top of individual data points.
+
+To do this, we will use the **dplyr**, a **tidyverse** package, and the `%>%` (pipe) operator. I'll explain this over the next two weeks, but for now, here's an example.
+
+```{r, message = FALSE}
+# Calculate mean and sd of life expectancy each year, for each continent
+gap_summ <- gapminder %>%
+  group_by(continent, year) %>% # splits the data frame into groups (but doesn't do anything)
+  summarise(mean.lifeExp = mean(lifeExp, na.rm = TRUE), # Summarise creates one row per unique group
+            sd.lifeExp = sd(lifeExp, na.rm = TRUE))
+
+# Add our summary dataset to the plot
+p_summary_example <- ggplot(gapminder) + 
+  geom_line(aes(x = year, y = lifeExp, colour = continent, group = country)) + 
+  geom_pointrange(data = gap_summ, aes(x = year, 
+                                       y = mean.lifeExp, 
+                                       ymin = mean.lifeExp - sd.lifeExp, 
+                                       ymax = mean.lifeExp + sd.lifeExp)) + 
+  facet_wrap(~continent) + 
+  theme_minimal() + 
+  theme(text = element_text(family = "Times"),
+        axis.line.y = element_line(colour = "red", linetype = 3))
+print(p_summary_example)
+```
+
+Remember that any mapping (`aes()`) that is defined within the `ggplot()` function (so, `ggplot(gapminder, aes(x = year))`) is valid for the entire plot. This can cause problems if you define a mapping that doesn't make sense for a certain geom, for instance `ymin` for `geom_point()`. Therefore, when you are plotting multiple data sets, you should generally define your mappings in the geoms.
+
+# Printing and saving
+
+Remember that the `ggplot()` function returns a list *which is a description of a plot*. The plot doesn't get created until you print or save it. Thus, errors in the plot will often not get caught when you define the plot, only when you print or save it.
+
+The `ggsave()` function is a handy wrapper for the various functions such as `png()` and `jpg()` that R uses to open graphics devices. The syntax of `ggsave()` is a bit unusual for **tidyverse** functions in that its first argument is the filename of the plot, rather than the object that it is acting on. Note that the plot to save is guessed by the function `last_plot()`, so if you don't specify which plot you want to save, you may get a different one than you meant to! This can be dangerous: it can cause you to save a different plot than you meant to. Accordingly, it is wise not to rely on `ggplot()` auto-print method, but to assign a descriptive name to all plots and to specify the name in the `ggsave()` function.
+
+```{r, message=FALSE, eval=FALSE}
+ggsave("plots/badplot.png", plot = p_summary_example, height = 3, width = 4, units = "in", dpi = 300)
+```
+
+Sometimes it makes sense to use base R's graphics devices to save plots:
+
+```{r, message=FALSE, eval=FALSE}
+tiff(filename = "plots/badplot.tiff", compression = "lzw", type = "cairo")
+print(p_summary_example)
+dev.off()
+```
+
+Remember that the graphics device functions (`png()`, `jpg()`, etc) interact with your computer's graphics systems, which makes their behavior very dependent on your specific system. For instance, I have to use the `cairo` system in order to compress a tiff on my machine, but that may not be the case on yours.

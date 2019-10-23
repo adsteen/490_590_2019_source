@@ -1,0 +1,332 @@
+---
+title: 'Lecture notes: linear models and methods'
+author: ~
+date: '2019-09-30'
+slug: lecture-notes-linear-models-and-methods
+categories: []
+tags: []
+---
+
+
+
+<p><strong>Note:</strong> These are the lecture notes for 30 September and 2 October.</p>
+<div id="resources" class="section level1">
+<h1>Resources</h1>
+<div id="linear-models" class="section level2">
+<h2>Linear models</h2>
+<ul>
+<li>Thomas Leeper’s <a href="https://thomasleeper.com/Rcourse/Tutorials/formulae.html">tutorial on formulae</a></li>
+<li>From <a href="https://r4ds.had.co.nz/model-basics.html#formulas-and-model-families">R for Data Science</a></li>
+</ul>
+</div>
+<div id="nonlinear-models" class="section level2">
+<h2>Nonlinear models</h2>
+<ul>
+<li><a href="https://datascienceplus.com/first-steps-with-non-linear-regression-in-r/">This tutorial</a> form DataScience+</li>
+</ul>
+</div>
+<div id="methods-and-method-dispatch" class="section level2">
+<h2>Methods and method dispatch</h2>
+<ul>
+<li>Probably more than you want to know from <a href="https://adv-r.hadley.nz/s3.html#s3-methods">Advanced R</a></li>
+</ul>
+</div>
+</div>
+<div id="linear-models-1" class="section level1">
+<h1>Linear models</h1>
+<p>Let’s think about one of the simplest statistical tasks we can do - creating a linear least-squares regression. We’ve already seen that <strong>ggplot2</strong> will do this automatically for us, via <code>geom_smooth(method = &quot;lm&quot;)</code>.</p>
+<pre class="r"><code>library(tidyverse)
+
+# What is the relationship between power and displacement?
+p_hp &lt;- ggplot(mtcars, aes(x = disp, y = hp)) +
+  geom_point() + 
+  geom_smooth(method = &quot;lm&quot;, se = TRUE) + 
+  ggrepel::geom_label_repel(label = rownames(mtcars))
+print(p_hp)</code></pre>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p>That’s great, but <strong>ggplot2</strong> makes it hard-to-impossible to pull out any information about the linear fit. Want to know the slope, or the <span class="math inline">\(r^2\)</span> value, or anything else about the fit? Too bad.</p>
+<p>We can get this information from the base R function <code>lm()</code>.</p>
+<pre class="r"><code>hp_mod &lt;- lm(hp ~ disp, data = mtcars) # lm for &quot;linear model&quot;</code></pre>
+<p>Perhaps unsurprisingly, <code>lm</code> makes an object of the class <code>lm</code>.</p>
+<pre class="r"><code>class(hp_mod)</code></pre>
+<pre><code>## [1] &quot;lm&quot;</code></pre>
+<p>An <code>lm</code> object is a list with a defined structure:</p>
+<pre class="r"><code>str(hp_mod, max.level = 1)</code></pre>
+<pre><code>## List of 12
+##  $ coefficients : Named num [1:2] 45.735 0.438
+##   ..- attr(*, &quot;names&quot;)= chr [1:2] &quot;(Intercept)&quot; &quot;disp&quot;
+##  $ residuals    : Named num [1:32] -5.74296 -5.74296 0.00978 -48.62312 -28.25349 ...
+##   ..- attr(*, &quot;names&quot;)= chr [1:32] &quot;Mazda RX4&quot; &quot;Mazda RX4 Wag&quot; &quot;Datsun 710&quot; &quot;Hornet 4 Drive&quot; ...
+##  $ effects      : Named num [1:32] -829.8 301.9 1.6 -48 -28.3 ...
+##   ..- attr(*, &quot;names&quot;)= chr [1:32] &quot;(Intercept)&quot; &quot;disp&quot; &quot;&quot; &quot;&quot; ...
+##  $ rank         : int 2
+##  $ fitted.values: Named num [1:32] 116 116 93 159 203 ...
+##   ..- attr(*, &quot;names&quot;)= chr [1:32] &quot;Mazda RX4&quot; &quot;Mazda RX4 Wag&quot; &quot;Datsun 710&quot; &quot;Hornet 4 Drive&quot; ...
+##  $ assign       : int [1:2] 0 1
+##  $ qr           :List of 5
+##   ..- attr(*, &quot;class&quot;)= chr &quot;qr&quot;
+##  $ df.residual  : int 30
+##  $ xlevels      : Named list()
+##  $ call         : language lm(formula = hp ~ disp, data = mtcars)
+##  $ terms        :Classes &#39;terms&#39;, &#39;formula&#39;  language hp ~ disp
+##   .. ..- attr(*, &quot;variables&quot;)= language list(hp, disp)
+##   .. ..- attr(*, &quot;factors&quot;)= int [1:2, 1] 0 1
+##   .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
+##   .. ..- attr(*, &quot;term.labels&quot;)= chr &quot;disp&quot;
+##   .. ..- attr(*, &quot;order&quot;)= int 1
+##   .. ..- attr(*, &quot;intercept&quot;)= int 1
+##   .. ..- attr(*, &quot;response&quot;)= int 1
+##   .. ..- attr(*, &quot;.Environment&quot;)=&lt;environment: R_GlobalEnv&gt; 
+##   .. ..- attr(*, &quot;predvars&quot;)= language list(hp, disp)
+##   .. ..- attr(*, &quot;dataClasses&quot;)= Named chr [1:2] &quot;numeric&quot; &quot;numeric&quot;
+##   .. .. ..- attr(*, &quot;names&quot;)= chr [1:2] &quot;hp&quot; &quot;disp&quot;
+##  $ model        :&#39;data.frame&#39;:   32 obs. of  2 variables:
+##   ..- attr(*, &quot;terms&quot;)=Classes &#39;terms&#39;, &#39;formula&#39;  language hp ~ disp
+##   .. .. ..- attr(*, &quot;variables&quot;)= language list(hp, disp)
+##   .. .. ..- attr(*, &quot;factors&quot;)= int [1:2, 1] 0 1
+##   .. .. .. ..- attr(*, &quot;dimnames&quot;)=List of 2
+##   .. .. ..- attr(*, &quot;term.labels&quot;)= chr &quot;disp&quot;
+##   .. .. ..- attr(*, &quot;order&quot;)= int 1
+##   .. .. ..- attr(*, &quot;intercept&quot;)= int 1
+##   .. .. ..- attr(*, &quot;response&quot;)= int 1
+##   .. .. ..- attr(*, &quot;.Environment&quot;)=&lt;environment: R_GlobalEnv&gt; 
+##   .. .. ..- attr(*, &quot;predvars&quot;)= language list(hp, disp)
+##   .. .. ..- attr(*, &quot;dataClasses&quot;)= Named chr [1:2] &quot;numeric&quot; &quot;numeric&quot;
+##   .. .. .. ..- attr(*, &quot;names&quot;)= chr [1:2] &quot;hp&quot; &quot;disp&quot;
+##  - attr(*, &quot;class&quot;)= chr &quot;lm&quot;</code></pre>
+<p>All the information we need about the linear model is stored in that <code>lm</code> object, but it is a little challenging to access. Luckily, there are a bunch of functions that we can use to access that information more directly. <code>summary()</code> is a great way to get an overview of the object:</p>
+<pre class="r"><code>summary(hp_mod)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = hp ~ disp, data = mtcars)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -48.623 -28.378  -6.558  13.588 157.562 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  45.7345    16.1289   2.836  0.00811 ** 
+## disp          0.4375     0.0618   7.080 7.14e-08 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 42.65 on 30 degrees of freedom
+## Multiple R-squared:  0.6256, Adjusted R-squared:  0.6131 
+## F-statistic: 50.13 on 1 and 30 DF,  p-value: 7.143e-08</code></pre>
+<p>Wow, that’s useful and nicely formatted! A few brief notes:</p>
+<ul>
+<li>The intercept is helpfully labeled <code>(Intercept)</code>.</li>
+<li>The slope is labeled with the name of the variable that it is with respect to. In this example, we are looking at the slope of <code>hp</code> with respect to <code>disp</code>. So, the slope here is labeled <code>disp</code>.</li>
+<li>The value of the slope and intercept is labeled as <code>Estimate</code>. An estimate of the error on the slope or estimate (which you should always report!) is labeled <code>&quot;Std. Error&quot;</code>.</li>
+<li>Often we just want to know whether our model is “significant”. For that, don’t look at the p-values listed for each variable. Look at the p-value for the entire model, listed at the bottom left, instead.</li>
+<li>The more variables you have in a model, the more variation you will explain. The “adjusted R-squared” accounts for this.</li>
+</ul>
+<div id="more-useful-methods" class="section level3">
+<h3>More useful methods</h3>
+<p>A few more useful methods for getting data out of linear models:</p>
+<ul>
+<li><code>coef()</code> returns the coefficients of the model fit</li>
+<li><code>confint()</code> returns the confidence intervals of the fit (95% confidence intervals by default)</li>
+<li><code>predict()</code> returns the values of the fit (predictions). I find this is most useful in more complicated models, and to create data sets of model fits to superimpose on plots. I’ll describe this more below in the section on nonlinear least-squares fits.</li>
+<li><code>residuals()</code> returns the residuals, which can be plotted to ensure that they meet the assumptions that must be met for linear least-squares regressions to be appropriate descriptions of data.</li>
+<li>And of course the grand-daddy useful method, <code>plot()</code>. This produces 4 plots that allow us to diagnose potential problems with our model.</li>
+</ul>
+<pre class="r"><code>plot(hp_mod)</code></pre>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-1.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-2.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-3.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-6-4.png" width="672" />
+Here’s a nice <a href="https://data.library.virginia.edu/diagnostic-plots/">explainer</a> on these plots by Bommae Kim of the University of Virginia Library.</p>
+<p>We can get a full list of the methods associated with any class of objects using the <strong>sloop</strong> package:</p>
+<pre class="r"><code>lm_methods &lt;- sloop::s3_methods_class(&quot;lm&quot;)
+print(lm_methods, n = nrow(lm_methods))</code></pre>
+<pre><code>## # A tibble: 37 x 4
+##    generic        class visible source             
+##    &lt;chr&gt;          &lt;chr&gt; &lt;lgl&gt;   &lt;chr&gt;              
+##  1 add1           lm    FALSE   registered S3method
+##  2 alias          lm    FALSE   registered S3method
+##  3 anova          lm    FALSE   registered S3method
+##  4 case.names     lm    FALSE   registered S3method
+##  5 confint        lm    TRUE    stats              
+##  6 cooks.distance lm    FALSE   registered S3method
+##  7 deviance       lm    FALSE   registered S3method
+##  8 dfbeta         lm    FALSE   registered S3method
+##  9 dfbetas        lm    FALSE   registered S3method
+## 10 drop1          lm    FALSE   registered S3method
+## 11 dummy.coef     lm    TRUE    stats              
+## 12 effects        lm    FALSE   registered S3method
+## 13 extractAIC     lm    FALSE   registered S3method
+## 14 family         lm    FALSE   registered S3method
+## 15 formula        lm    FALSE   registered S3method
+## 16 fortify        lm    FALSE   registered S3method
+## 17 hatvalues      lm    FALSE   registered S3method
+## 18 influence      lm    FALSE   registered S3method
+## 19 kappa          lm    TRUE    base               
+## 20 labels         lm    FALSE   registered S3method
+## 21 logLik         lm    FALSE   registered S3method
+## 22 model.frame    lm    FALSE   registered S3method
+## 23 model.matrix   lm    TRUE    stats              
+## 24 nobs           lm    FALSE   registered S3method
+## 25 plot           lm    FALSE   registered S3method
+## 26 predict        lm    TRUE    stats              
+## 27 print          lm    FALSE   registered S3method
+## 28 proj           lm    FALSE   registered S3method
+## 29 qqnorm         lm    FALSE   registered S3method
+## 30 qr             lm    FALSE   registered S3method
+## 31 residuals      lm    TRUE    stats              
+## 32 rstandard      lm    FALSE   registered S3method
+## 33 rstudent       lm    FALSE   registered S3method
+## 34 simulate       lm    FALSE   registered S3method
+## 35 summary        lm    TRUE    stats              
+## 36 variable.names lm    FALSE   registered S3method
+## 37 vcov           lm    FALSE   registered S3method</code></pre>
+</div>
+<div id="understanding-r-formulae" class="section level2">
+<h2>Understanding R formulae</h2>
+<p>Briefly, the <code>~</code> in an R function can be read as “as a function of”. So <code>y ~ x</code> indicates an attempt to model <code>y</code> as a function of <code>x</code>. This implies a model with a slope and an intercept. Statisticians like to write this as <span class="math inline">\(y = \beta_0 + \beta_1 X_1 + \epsilon\)</span>. Normal people would write it <span class="math inline">\(y = mx + b + \epsilon\)</span>. The <span class="math inline">\(\epsilon\)</span> here represents a random error value that accounts for the fact that the real data deviate to some degree from the model predictions - <span class="math inline">\(\epsilon\)</span> accounts for the residuals.</p>
+<p>The great thing about R formulae is that it is easy to expand to more complicated models. For instance, let’s imagine that we want to model life expectancy in a country as a function of the year and the GDP per capita of the country. That is, we want to model
+<span class="math inline">\(lifeExp = \beta_1\times lifeExp + \beta_2 \times year + \beta_0 + \epsilon\)</span></p>
+<pre class="r"><code>library(gapminder)
+gap_mod &lt;- lm(lifeExp ~ year + gdpPercap, data = gapminder)</code></pre>
+<p>Easy peasy!</p>
+<pre class="r"><code>summary(gap_mod)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = lifeExp ~ year + gdpPercap, data = gapminder)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -67.262  -6.954   1.219   7.759  19.553 
+## 
+## Coefficients:
+##               Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -4.184e+02  2.762e+01  -15.15   &lt;2e-16 ***
+## year         2.390e-01  1.397e-02   17.11   &lt;2e-16 ***
+## gdpPercap    6.697e-04  2.447e-05   27.37   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 9.694 on 1701 degrees of freedom
+## Multiple R-squared:  0.4375, Adjusted R-squared:  0.4368 
+## F-statistic: 661.4 on 2 and 1701 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>And look, we’ve solved the mystery of life expectancy: the p value is tiny. Model success, let’s all go home.</p>
+<pre class="r"><code>plot(gap_mod)</code></pre>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-1.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-2.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-3.png" width="672" /><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-10-4.png" width="672" />
+Uhhh… maybe this isn’t such a good model after all. (Also note that it only had an <span class="math inline">\(r^2\)</span> value of 0.44, which means it didn’t explain most of the variation.)</p>
+<div id="anscombes-quartet" class="section level3">
+<h3>Anscombe’s quartet</h3>
+<p>Evaluating the quality of linear models is no joke: very different data sets can have identical linear models even when the relationships are very different. <a href="https://en.wikipedia.org/wiki/Anscombe%27s_quartet">Anscombe’s Quartet</a> is a great example of this:</p>
+<pre class="r"><code># install.packages(&quot;devtools&quot;)
+# devtools::install_github(&#39;stephenturner/Tmisc&#39;)
+library(Tmisc)
+p_anscombe &lt;- ggplot(quartet, aes(x = x, y = y)) +
+  geom_point() + 
+  geom_smooth(method = &quot;lm&quot;, se = FALSE) + 
+  facet_wrap(~ set)
+print(p_anscombe)</code></pre>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p>We’ll use a techinque that we’ll talk about on Wednesday to learn more about these models.</p>
+<pre class="r"><code>get_slope &lt;- function(df) {
+  as.numeric(df[2, &quot;estimate&quot;])
+}
+
+anscombe_extra &lt;- quartet %&gt;%
+  group_by(set) %&gt;%
+  nest() %&gt;%
+  mutate(lms = map(data, function(df) lm(y~x, data = df))) %&gt;%
+  mutate(glance_lm = lms %&gt;% map(broom::glance),
+         tidy_lm = lms %&gt;% map(broom::tidy),
+         slope = tidy_lm %&gt;% map_dbl(function(df) as.numeric(df[2, &quot;estimate&quot;])),
+         intercept = tidy_lm %&gt;% map_dbl(function(df) as.numeric(df[1, &quot;estimate&quot;])),
+         rsq = glance_lm %&gt;% map_dbl(&quot;r.squared&quot;),
+         p.val = glance_lm %&gt;% map_dbl(&quot;p.value&quot;)) %&gt;%
+  select(set, slope, intercept, rsq, p.val)
+print(anscombe_extra)</code></pre>
+<pre><code>## # A tibble: 4 x 5
+##   set   slope intercept   rsq   p.val
+##   &lt;fct&gt; &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+## 1 I     0.500      3.00 0.667 0.00217
+## 2 II    0.5        3.00 0.666 0.00218
+## 3 III   0.500      3.00 0.666 0.00218
+## 4 IV    0.500      3.00 0.667 0.00216</code></pre>
+<p>These data frames are dang near identical!</p>
+<p>Of course, to be convinced of this, you really want to look at the <code>datasauRus</code> data set:</p>
+<pre class="r"><code>library(datasauRus)
+p_datasaurus &lt;- ggplot(datasaurus_dozen, aes(x = x, y = y)) + 
+  geom_point() + 
+  geom_smooth(method = &quot;lm&quot;, se = TRUE) + 
+  facet_wrap(~dataset)
+print(p_datasaurus)</code></pre>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+</div>
+</div>
+<div id="nls-and-nls2" class="section level2">
+<h2><code>nls()</code> and <code>nls2()</code></h2>
+<p>Often we have data that we expect to follow some physical law, and we would like to see the extent to which they do. Sadly, physical laws often take the form of nonlinear equations, so we need a way to fit nonlinear equations to data. For this, we can use the base R function <code>nls()</code>, or the <code>nls2()</code> function from the <strong>nls2</strong> package. <code>nls2()</code> works basically the same way as <code>nls()</code>, but it has some extra features that I won’t discuss here.</p>
+<p>There are two main differences between linear models and nonlinear models, from a practical standpoint:</p>
+<ul>
+<li>You have to specify all the constants that are being fit in a nonlinear model. Thus, the formula you’ll specify will have constants as well as variables, whereas for a linear model, you only specify the variables.</li>
+<li>For linear models, there’s a single, analytically-determined best solution to the model. R does some matrix algebra to identify that solution. For nonlinear least squares models, there’s no analytical solution, so R has to start with a guess, and then try to improve the guess until it gets to an optimal solution. <strong>Generally, you have to supply this guess</strong> although there are sometimes ways for R to generate initial guesses on its own. This has two major implications:
+<ul>
+<li>If the initial guess you supply is too bad, R will never find its way to a good solution.</li>
+<li>Sometimes R can get stuck in “local valleys”. In this case, R finds a solution and thinks it is the best solution, but in fact there is a much better solution somewhere else.</li>
+</ul></li>
+</ul>
+<p>In both of those cases, the fact that there is a problem is usually obvious, but generating a good set of initial guesses can be a challenge.</p>
+<p>Let’s think about the relationship between <code>qsec</code> and <code>hp</code> in the <code>mtcars</code> data set:</p>
+<pre class="r"><code>ggplot(mtcars, aes(x = hp, y = qsec)) + 
+  geom_point() </code></pre>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p>Let’s imagine that we think there’s an inverse relationship between quarter second time and horsepower from the mtcars, something like <span class="math inline">\(qsec = A / hp + C\)</span>.</p>
+<p>First, we’ll need to specify the formula, <em>using the variable names as they are listed in the data frame you’re using</em>.</p>
+<pre class="r"><code>inverse_formula &lt;- formula(qsec ~ A/hp + C)</code></pre>
+<p>Now we need to guess some initial values for our constants <span class="math inline">\(A\)</span> and <span class="math inline">\(C\)</span>. The data set levels off maybe around 14, so we’ll guess 14 for <span class="math inline">\(C\)</span>. For <span class="math inline">\(A\)</span>, I have no idea - 1 is an OK guess, I suppose.</p>
+<pre class="r"><code>init_guesses &lt;- list(A = 1, C = 14)</code></pre>
+<pre class="r"><code>library(nls2)</code></pre>
+<pre><code>## Loading required package: proto</code></pre>
+<pre class="r"><code>inverse_model &lt;- nls2(formula = inverse_formula, data = mtcars, start = init_guesses)
+summary(inverse_model)</code></pre>
+<pre><code>## 
+## Formula: qsec ~ A/hp + C
+## 
+## Parameters:
+##   Estimate Std. Error t value Pr(&gt;|t|)    
+## A 268.2085    62.4793   4.293  0.00017 ***
+## C  15.5802     0.5858  26.597  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 1.43 on 30 degrees of freedom
+## 
+## Number of iterations to convergence: 1 
+## Achieved convergence tolerance: 1.799e-06</code></pre>
+<p>Cool! It worked.</p>
+<p>Now we want to create a new data frame with the values of <code>hp</code> and <code>qsec</code>, that we can plot on top of the plot of the raw data. We’ll use the <code>predict</code> method for this.</p>
+<p>First, we want to create a ‘grid’ of x-values for which to calculate a value for the model. For some reason, <code>predict</code> wants this grid as a data frame. A good rule of thumb is to create a grid that goes from the minimum to the maximum x-value, with 100 points:</p>
+<pre class="r"><code>grid_df &lt;- data.frame(hp = seq(from = min(mtcars$hp), 
+                               to = max(mtcars$hp), 
+                               length.out = 100))</code></pre>
+<p>Now we’ll predict the model on this grid. For some freaking reason, predict returns a vector, even though it wants the grid as a data frame:</p>
+<pre class="r"><code>pred.vec &lt;- predict(inverse_model, newdata = grid_df)</code></pre>
+<p>Finally, we’ll turn that vector into a data frame, and plot it on the original plot.</p>
+<pre class="r"><code>pred_df &lt;- cbind(grid_df, qsec = pred.vec)
+
+ggplot(mtcars, aes(x = hp, y = qsec)) + 
+  geom_point() + 
+  geom_line(data = pred_df, aes(x = hp, y = qsec))</code></pre>
+<p><img src="/490_590_2019/post/2019-09-30-lecture-notes-linear-models-and-methods_files/figure-html/unnamed-chunk-20-1.png" width="672" />
+Hey look this is actually a plausible way to describe these data!</p>
+</div>
+</div>
+<div id="anonymous-functions" class="section level1">
+<h1>Anonymous functions</h1>
+<p>We haven’t explicitly discussed writing our own functions before, but we have created some examples of these. In general, we create a function using the function <code>function()</code>.</p>
+<pre class="r"><code>my_function &lt;- function(x) {
+  x + 1
+}
+
+my_function(2)</code></pre>
+<pre><code>## [1] 3</code></pre>
+<p>You’ll notice that <code>my_function</code> is an object of the class “function”:</p>
+<pre class="r"><code>class(my_function)</code></pre>
+<pre><code>## [1] &quot;function&quot;</code></pre>
+<p>Usually this is the best way to define a function. However, sometimes we want to define a really simple function that we’ll only ever use in one line of code. In this case, we don’t necessarily want to create a specific new function object. Instead, we’ll use an <a href="http://adv-r.had.co.nz/Functional-programming.html#anonymous-functions">anonymous function</a> which</p>
+</div>

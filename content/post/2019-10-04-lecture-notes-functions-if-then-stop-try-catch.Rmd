@@ -1,0 +1,145 @@
+---
+title: 'Lecture notes: Functions, if/then, stop, try/catch'
+author: ~
+date: '2019-10-04'
+slug: lecture-notes-functions-if-then-stop-try-catch
+categories: []
+tags: []
+---
+
+# Resources
+
+* Functions: Advanced R [Chapter 6](https://adv-r.hadley.nz/functions.html)
+* I've decided not to talk a lot about environments, but if you want to build a package, it may help you to read about environments in Advanced R [Chapter 7](https://adv-r.hadley.nz/environments.html)
+* [This handy-dandy blog post](http://mazamascience.com/WorkingWithData/?p=912) about `tryCatch()` that is way more informative than the help page.
+
+# Functions
+
+* Reminder: we create a function with the `function()` function
+* Parameters, default values
+
+## Debugging
+
+* `print()`
+* `browser()`
+
+## Errors, warnings, and messages
+
+* `stop()`, `warning()`, `message()`
+(now, why would we want to catch errors?)
+
+## Parameter checking with if/else
+
+```{r, error=TRUE}
+example_fun <- function(x) {
+  x + 3
+}
+example_fun("a")
+```
+
+```{r, error = TRUE}
+example_fun_better <- function(x) {
+  if(!is.numeric(x)) { # remember ! means "not"
+    warning("The argument x is not numeric")
+    result <- NA
+  } else {
+    # This bit only runs if x is not, not numeric (i.e. if it is numeric)
+    x + 3
+  }
+}
+
+logical.vec <- c(TRUE, FALSE, FALSE)
+x <- example_fun_better(logical.vec);
+x
+```
+
+
+Note that you can use `switch()` if you expect one of a few inputs (e.g., you could do different things in the function above if the )
+
+## Error trapping with try/catch
+
+Error trapping allows a function to "trap" an error and do things like change the error message to something more informative, or (perhaps more usefully) to return something like NA that will keep the rest of your code from tripping up. 
+
+```{r, error = TRUE}
+my_fun <- function(x) {
+  result <- tryCatch({
+    x + 3
+    }, error = function(e) stop("There was some kind of error")
+  )
+  result
+}
+
+
+
+char_combine <- function(x1, x2) {
+  result = tryCatch({
+    c(x1, x2)
+  }, warning = function(w) {
+    warning("I'm only going to warn you once")
+  }, error = function(e) {
+    warning("R tried to throw an error, but I've got your back")
+  }, finally = {
+    result = NA
+  })
+  result
+}
+
+```
+
+
+## A real-ish example
+
+Let's imagine that the mtcars data set had included the [Volvo V70R](https://fastestlaps.com/models/volvo-v70-r), which has a 5-cylinder engine. I'll create `mtcars_alt` with that data (and with the name of the car as a column, rather than as rownames). 
+
+```{r, message = FALSE}
+library(tidyverse)
+
+new_row <- data.frame(mpg = 23, cyl = 5, disp = 153, hp = 295, drat = NA, wt = 3.929, qsec = NA, vs = 0, am = 1, gear = 6, carb = 0, make.model = "Volvo V70R")
+
+mtcars_alt <- mtcars %>%
+  mutate(make.model = rownames(mtcars)) %>%
+  rbind(new_row)
+tail(mtcars_alt)
+```
+
+OK, now that the data is set up, let's imagine that we'd like to create a linear model for `qsec` vs `hp`, for each unique number of cylinders. This is going to be a problem, since there is only one 5-cylinder car, we don't know what it's quarter second time (`qsec`) is. So we want to write a function that will create a linear model but return NA in case the linear model doesn't work.
+
+We'll write a similar function to get the slope from a linear model, but return NA if that function doesn't work.
+
+```{r}
+safe_lm <- function(x) {
+  my_lm <- tryCatch({
+    lm(qsec ~ hp, data = x)
+  }, error = function(e) {
+    warning(paste("An error was ignored:", e))
+    NA # If an error is thrown, NA will be assigned to my_lm
+  })
+  my_lm
+}
+
+safe_slope <- function(x) {
+  slope <- tryCatch({
+    coef(x)[2]
+  }, error = function(e) {
+    # I'm not going to bother to have this one do anything with the error message
+    NA
+  })
+  slope
+}
+
+mtcars_alt <- mtcars_alt %>%
+  group_by(cyl) %>%
+  nest() %>%
+  mutate(lms = map(data, safe_lm),
+         slopes = map_dbl(lms, safe_slope))
+```
+
+Now we can do something complicated, like look at the relationship between the slope of qsec vs horsepower as a function of the number of cylinders:
+
+```{r}
+ggplot(mtcars_alt, aes(x=cyl, y = slopes)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE)
+```
+(Turns out there isn't much of a relationship). 
+

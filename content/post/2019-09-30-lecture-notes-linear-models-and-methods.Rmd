@@ -1,0 +1,254 @@
+---
+title: 'Lecture notes: linear models and methods'
+author: ~
+date: '2019-09-30'
+slug: lecture-notes-linear-models-and-methods
+categories: []
+tags: []
+---
+
+**Note:** These are the lecture notes for 30 September and 2 October.
+
+# Resources
+
+## Linear models
+
+* Thomas Leeper's [tutorial on formulae](https://thomasleeper.com/Rcourse/Tutorials/formulae.html)
+* From [R for Data Science](https://r4ds.had.co.nz/model-basics.html#formulas-and-model-families)
+
+## Nonlinear models
+
+* [This tutorial](https://datascienceplus.com/first-steps-with-non-linear-regression-in-r/) form DataScience+
+
+## Methods and method dispatch
+
+* Probably more than you want to know from [Advanced R](https://adv-r.hadley.nz/s3.html#s3-methods)
+
+# Linear models
+
+Let's think about one of the simplest statistical tasks we can do - creating a linear least-squares regression. We've already seen that **ggplot2** will do this automatically for us, via `geom_smooth(method = "lm")`.
+
+```{r, message = FALSE}
+library(tidyverse)
+
+# What is the relationship between power and displacement?
+p_hp <- ggplot(mtcars, aes(x = disp, y = hp)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = TRUE) + 
+  ggrepel::geom_label_repel(label = rownames(mtcars))
+print(p_hp)
+```
+
+That's great, but **ggplot2** makes it hard-to-impossible to pull out any information about the linear fit. Want to know the slope, or the $r^2$ value, or anything else about the fit? Too bad.
+
+We can get this information from the base R function `lm()`. 
+
+```{r}
+hp_mod <- lm(hp ~ disp, data = mtcars) # lm for "linear model"
+```
+
+Perhaps unsurprisingly, `lm` makes an object of the class `lm`.
+
+```{r}
+class(hp_mod)
+```
+An `lm` object is a list with a defined structure:
+
+```{r}
+str(hp_mod, max.level = 1)
+```
+
+All the information we need about the linear model is stored in that `lm` object, but it is a little challenging to access. Luckily, there are a bunch of functions that we can use to access that information more directly. `summary()` is a great way to get an overview of the object:
+
+```{r}
+summary(hp_mod)
+```
+
+Wow, that's useful and nicely formatted! A few brief notes:
+
+* The intercept is helpfully labeled `(Intercept)`. 
+* The slope is labeled with the name of the variable that it is with respect to. In this example, we are looking at the slope of `hp` with respect to `disp`. So, the slope here is labeled `disp`. 
+* The value of the slope and intercept is labeled as `Estimate`. An estimate of the error on the slope or estimate (which you should always report!) is labeled `"Std. Error"`. 
+* Often we just want to know whether our model is "significant". For that, don't look at the p-values listed for each variable. Look at the p-value for the entire model, listed at the bottom left, instead.
+* The more variables you have in a model, the more variation you will explain. The "adjusted R-squared" accounts for this.
+
+### More useful methods
+
+A few more useful methods for getting data out of linear models:
+
+* `coef()` returns the coefficients of the model fit
+* `confint()` returns the confidence intervals of the fit (95% confidence intervals by default)
+* `predict()` returns the values of the fit (predictions). I find this is most useful in more complicated models, and to create data sets of model fits to superimpose on plots. I'll describe this more below in the section on nonlinear least-squares fits.
+* `residuals()` returns the residuals, which can be plotted to ensure that they meet the assumptions that must be met for linear least-squares regressions to be appropriate descriptions of data.
+* And of course the grand-daddy useful method, `plot()`. This produces 4 plots that allow us to diagnose potential problems with our model.
+```{r}
+plot(hp_mod)
+```
+Here's a nice [explainer](https://data.library.virginia.edu/diagnostic-plots/) on these plots by Bommae Kim of the University of Virginia Library.
+
+We can get a full list of the methods associated with any class of objects using the **sloop** package:
+
+```{r}
+lm_methods <- sloop::s3_methods_class("lm")
+print(lm_methods, n = nrow(lm_methods))
+```
+
+
+
+## Understanding R formulae
+
+Briefly, the `~` in an R function can be read as "as a function of". So `y ~ x` indicates an attempt to model `y` as a function of `x`. This implies a model with a slope and an intercept. Statisticians like to write this as $y = \beta_0 + \beta_1 X_1 + \epsilon$. Normal people would write it $y = mx + b + \epsilon$. The $\epsilon$ here represents a random error value that accounts for the fact that the real data deviate to some degree from the model predictions - $\epsilon$ accounts for the residuals.
+
+The great thing about R formulae is that it is easy to expand to more complicated models. For instance, let's imagine that we want to model life expectancy in a country as a function of the year and the GDP per capita of the country. That is, we want to model
+$lifeExp = \beta_1\times lifeExp + \beta_2 \times year + \beta_0 + \epsilon$
+
+```{r, message=FALSE}
+library(gapminder)
+gap_mod <- lm(lifeExp ~ year + gdpPercap, data = gapminder)
+
+```
+Easy peasy!
+```{r}
+summary(gap_mod)
+```
+And look, we've solved the mystery of life expectancy: the p value is tiny. Model success, let's all go home.
+```{r}
+plot(gap_mod)
+```
+Uhhh... maybe this isn't such a good model after all. (Also note that it only had an $r^2$ value of 0.44, which means it didn't explain most of the variation.) 
+
+### Anscombe's quartet
+
+Evaluating the quality of linear models is no joke: very different data sets can have identical linear models even when the relationships are very different. [Anscombe's Quartet](https://en.wikipedia.org/wiki/Anscombe%27s_quartet) is a great example of this:
+
+```{r}
+# install.packages("devtools")
+# devtools::install_github('stephenturner/Tmisc')
+library(Tmisc)
+p_anscombe <- ggplot(quartet, aes(x = x, y = y)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  facet_wrap(~ set)
+print(p_anscombe)
+```
+
+We'll use a techinque that we'll talk about on Wednesday to learn more about these models.
+
+```{r}
+get_slope <- function(df) {
+  as.numeric(df[2, "estimate"])
+}
+
+anscombe_extra <- quartet %>%
+  group_by(set) %>%
+  nest() %>%
+  mutate(lms = map(data, function(df) lm(y~x, data = df))) %>%
+  mutate(glance_lm = lms %>% map(broom::glance),
+         tidy_lm = lms %>% map(broom::tidy),
+         slope = tidy_lm %>% map_dbl(function(df) as.numeric(df[2, "estimate"])),
+         intercept = tidy_lm %>% map_dbl(function(df) as.numeric(df[1, "estimate"])),
+         rsq = glance_lm %>% map_dbl("r.squared"),
+         p.val = glance_lm %>% map_dbl("p.value")) %>%
+  select(set, slope, intercept, rsq, p.val)
+print(anscombe_extra)
+```
+
+These data frames are dang near identical!
+
+Of course, to be convinced of this, you really want to look at the `datasauRus` data set:
+```{r, message = FALSE}
+library(datasauRus)
+p_datasaurus <- ggplot(datasaurus_dozen, aes(x = x, y = y)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = TRUE) + 
+  facet_wrap(~dataset)
+print(p_datasaurus)
+```
+
+
+## `nls()` and `nls2()`
+
+Often we have data that we expect to follow some physical law, and we would like to see the extent to which they do. Sadly, physical laws often take the form of nonlinear equations, so we need a way to fit nonlinear equations to data. For this, we can use the base R function `nls()`, or the `nls2()` function from the **nls2** package. `nls2()` works basically the same way as `nls()`, but it has some extra features that I won't discuss here.
+
+There are two main differences between linear models and nonlinear models, from a practical standpoint:
+
+* You have to specify all the constants that are being fit in a nonlinear model. Thus, the formula you'll specify will have constants as well as variables, whereas for a linear model, you only specify the variables.
+* For linear models, there's a single, analytically-determined best solution to the model. R does some matrix algebra to identify that solution. For nonlinear least squares models, there's no analytical solution, so R has to start with a guess, and then try to improve the guess until it gets to an optimal solution. **Generally, you have to supply this guess** although there are sometimes ways for R to generate initial guesses on its own. This has two major implications:
+    * If the initial guess you supply is too bad, R will never find its way to a good solution.
+    * Sometimes R can get stuck in "local valleys". In this case, R finds a solution and thinks it is the best solution, but in fact there is a much better solution somewhere else.
+
+In both of those cases, the fact that there is a problem is usually obvious, but generating a good set of initial guesses can be a challenge.
+
+Let's think about the relationship between `qsec` and `hp` in the `mtcars` data set:
+```{r, message = FALSE}
+ggplot(mtcars, aes(x = hp, y = qsec)) + 
+  geom_point() 
+```
+
+Let's imagine that we think there's an inverse relationship between quarter second time and horsepower from the mtcars, something like $qsec = A / hp + C$.
+
+
+
+First, we'll need to specify the formula, *using the variable names as they are listed in the data frame you're using*.
+
+```{r}
+inverse_formula <- formula(qsec ~ A/hp + C)
+```
+
+Now we need to guess some initial values for our constants $A$ and $C$. The data set levels off maybe around 14, so we'll guess 14 for $C$. For $A$, I have no idea - 1 is an OK guess, I suppose.
+
+```{r}
+init_guesses <- list(A = 1, C = 14)
+```
+
+```{r}
+library(nls2)
+inverse_model <- nls2(formula = inverse_formula, data = mtcars, start = init_guesses)
+summary(inverse_model)
+```
+Cool! It worked. 
+
+Now we want to create a new data frame with the values of `hp` and `qsec`, that we can plot on top of the plot of the raw data. We'll use the `predict` method for this.
+
+First, we want to create a 'grid' of x-values for which to calculate a value for the model. For some reason, `predict` wants this grid as a data frame. A good rule of thumb is to create a grid that goes from the minimum to the maximum x-value, with 100 points:
+
+```{r}
+grid_df <- data.frame(hp = seq(from = min(mtcars$hp), 
+                               to = max(mtcars$hp), 
+                               length.out = 100))
+```
+
+Now we'll predict the model on this grid. For some freaking reason, predict returns a vector, even though it wants the grid as a data frame:
+
+```{r}
+pred.vec <- predict(inverse_model, newdata = grid_df)
+```
+
+Finally, we'll turn that vector into a data frame, and plot it on the original plot.
+```{r}
+pred_df <- cbind(grid_df, qsec = pred.vec)
+
+ggplot(mtcars, aes(x = hp, y = qsec)) + 
+  geom_point() + 
+  geom_line(data = pred_df, aes(x = hp, y = qsec))
+```
+Hey look this is actually a plausible way to describe these data!
+
+# Anonymous functions
+
+We haven't explicitly discussed writing our own functions before, but we have created some examples of these. In general, we create a function using the function `function()`. 
+
+```{r}
+my_function <- function(x) {
+  x + 1
+}
+
+my_function(2)
+```
+
+You'll notice that `my_function` is an object of the class "function":
+```{r}
+class(my_function)
+```
+
+Usually this is the best way to define a function. However, sometimes we want to define a really simple function that we'll only ever use in one line of code. In this case, we don't necessarily want to create a specific new function object. Instead, we'll use an [anonymous function](http://adv-r.had.co.nz/Functional-programming.html#anonymous-functions) which 

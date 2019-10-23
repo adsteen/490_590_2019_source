@@ -1,0 +1,32 @@
+---
+title: 'Lecture notes: object-oriented programming'
+author: ~
+date: '2019-10-08'
+slug: lecture-notes-performance-and-environments
+categories: []
+tags: []
+---
+
+# Resources
+
+* Advanced R chapter on [S3](https://adv-r.hadley.nz/s3.html), from which this lesson is taken more-or-less directly.
+
+```{r}
+library(tidyverse)
+library(sloop)
+```
+
+```{r}
+f <- factor(c("a", "b", "c"))
+
+typeof(f)
+#> [1] "integer"
+attributes(f)
+#> $levels
+#> [1] "a" "b" "c"
+#> 
+#> $class
+#> [1] "factor"
+```
+
+

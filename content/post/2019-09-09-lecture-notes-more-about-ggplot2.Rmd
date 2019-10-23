@@ -1,0 +1,99 @@
+---
+title: 'Lecture notes: More about ggplot2'
+author: ~
+date: '2019-09-09'
+slug: lecture-notes-more-about-ggplot2
+categories: []
+tags: []
+---
+
+
+Here is the code from Sept 9, again modified lightly from the software carpentry lesson.
+
+# Basics
+
+## R structures
+
+* Every noun is an object
+   * We'll tak more about this later
+* Every verb is a function
+  * Functions can be identified by parentheses
+    * `c()` calls the concatenation function
+    * `c` could store anything (a vector, a list, or the `c()` function)
+
+## Getting help
+
+### StackOverflow
+* [Stackoverflow](https:://stackoverflow.com) is full of help for all kinds of sofware issues (for R and every other language under the sun).
+* At this point, it is exceedingly unlikely that you have a question that is not already posted, and answered, on StackOverflow
+* If you are really, truly certain that your question isn't addressed on stackoverflow, use the guide [here](https://stackoverflow.com/questions/5963269/how-to-make-a-great-r-reproducible-example) on how to create a **minimal, reproducible question**. 
+* Note that the process of creating a minimal, reproducible question will often lead you to the solution, with no need for anyone else to get involved!
+* You can trace my development as an R coder [here](https://stackoverflow.com/users/741348/drew-steen), if you genuinely have nothing better to do with your time.
+
+### R Documentation
+* Get the documentation for any R function (and many other things, like whole packages and some data sets) by prefacing the function name with a ?: `?ggplot`
+* Know how to read the documentation
+  * **Header**:Function name {package}
+  * **Description**: A short text description of the function.
+    * That anger that you feel when a description makes no sense: store it up. Nurture it, let it grow within you. Allow it to *become* you. When the time comes to write your own function documentation, allow that anger to blossom, and use it to write the best damn function descriptions anyone has ever written.
+  * **Usage**: includes all named arguments and their default values. 
+    * Remember that `...` means "I'll pass these arguments along to other functions that I will call. (You, the user, won't necessarily know what those functions are.)"
+    * Good style (in my opinion) requires naming all arguments unless it is really, really obvious which argument is which.
+    * If you name one argument, name them all.
+  * **Arguments**: description/explanation of those arguments. Pay special attention to what class of object the arguments will accept.
+  * **Details**: It is easy to gloss over these, but don't. They often contain really useful information, such as specific instances in which the function won't work, or potentially suprising behavior. 4 hours of banging your head against your computer can easily save you 10 minutes of reading a Details section.
+  * **Examples**: Self-explanatory, except that I swear there is some kind of conspiracy to select the least self-explanatory code examples possible in many packages' documentation. 
+  
+  
+# More ggplot2
+
+Make sure you understand all of the code below, and why it does what it does.
+
+```{r, message = FALSE}
+
+# gapminder is a dataset library
+library(ggplot2)
+library(gapminder)
+
+# basic plotting operations
+ggplot(mapping = aes(x = gdpPercap, y = lifeExp), data = gapminder) + 
+  geom_point()
+```
+
+Note that if you name the arguments, you can put them in whatever order you want (but this is bad style, because readers will be expecting the data argument to come before the mapping argument.)
+
+```{r, message = FALSE}
+ggplot(gapminder, aes(gdpPercap, lifeExp)) +
+  geom_point()
+```
+
+When aesthetics are mapped in the `ggplot()` function, they applot to the entire plot. When they are mapped in the `geom_`, they apply only to that geom.
+
+```{r, message = FALSE}
+ggplot(gapminder, aes(gdpPercap, lifeExp, group = country, color = continent)) + 
+  geom_point()
+```
+
+Why is it, exactly, that we can refer to `gdpPercap` by iteself (i.e., instead of `gapminder$gdpPercap`) in the `aes()` call, but outside of the `aes()` call?
+
+The answer is hidden in the help file: `environment = parent.frame()`. Roughly, this tells us that `ggplot` starts looking for objects inside of the dataframe named in the `data` argument, so we don't need to refer to the `data` dataframe explicitly. More on this in a few weeks. 
+
+```{r}
+ggplot(gapminder, aes(x = year,
+                      y = lifeExp, 
+                      color = continent)) +
+  #geom_line(aes(group = country, linetype = continent)) +  
+  geom_point() + 
+  scale_color_discrete(name = "Continent") + # control how the mapping works
+  facet_wrap(~ continent) +
+  theme(axis.text.x = element_text(angle = -45, hjust = -1))
+```
+  
+In the plot above: pay attention to:
+
+  * The meaning of each mapping
+  * What it means that `x`, `y`, etc, are inside an `aes()` function, but `alpha = 0.3` isn't. What would happen if we put `alpha = 0.3` inside the `aes()` call? Would that be a good idea?
+  * Changing the way that color is mapped to `continent` using `scale_color_discrete()`
+  * Creating 'facets' (subplots) using `facet_wrap()` or `facet_grid()`
+    * Note `~` which creates an R [formula](https://rviews.rstudio.com/2017/02/01/the-r-formula-method-the-good-parts/)
+  

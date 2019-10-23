@@ -1,0 +1,209 @@
+---
+title: 'Lecture notes: Intro to dplyr'
+author: ~
+date: '2019-09-20'
+slug: lecture-notes-intro-to-dplyr
+categories: []
+tags: []
+---
+
+# Resources
+
+* [Original paper](https://www.jstatsoft.org/article/view/v040i01) (although note that the package that paper describes, **plyr**, has been replaced by the tidyverse package **dplyr**, which has totally different syntax.)
+* Software Carpentry lessons:
+    * [Split-apply-combine conceptual introduction](https://swcarpentry.github.io/swc-releases/2016.06/r-novice-gapminder/12-plyr/) 
+    * [Implementation in **dplyr**](http://swcarpentry.github.io/r-novice-gapminder/13-dplyr/index.html)
+    * Note that, for some reason, the first Software Carpentry lesson is in **plyr** and the second is is in **dplyr**. This really makes no sense, as **dplyr** is the replacement for **plyr** - you're not supposed to use them at the same time, and indeed loading them at the same time will cause some [really weird stuff](https://github.com/tidyverse/dplyr/issues/347) to happen. So don't do it.
+    
+* RStudio's [data wrangling cheat sheet](https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf) (pdf link). This is mostly about **dplyr**, with a couple of other **tidyverse** packages included. 
+
+
+# **dplyr**
+
+*A note about "tibbles" and data frames:* **dplyr** works on "tibbles", which are a specific kind of data frame. The name "tibble" comes from `tbl_df` 
+
+The heart of the tidyverse is **dplyr**. **dplyr** can do a bunch of neat things, but today we're going to focus on a few key abilities, and their associated functions:
+
+* piping: `%>%`. Feeds the return value of one function into the first argument of the next function. This allows you to perform a bunch of logically-connected operations on a data frame in one "line" of code. (In practice: please put a line break after each `%>%`. This will prevent you from writing unbelievably long lines of code, and R will still interpret these as a single "line".)
+* selecting: `select()`. Selects columns of a data frame.
+    * This is just another way to subset a data frame by rows, just like the `$` (e.g. `diamonds$carat`) or bracket subsetting (e.g. `diamonds[, 2:4]` or `diamonds[ , c("cut", "color", "clarity")]`). The value is that it works well with piping. 
+* filtering: `filter()`. Subeset a data frame by rows. Keeps rows only if the value of that row for a specific column meets a condition.
+    * This is just another way to subset by rows, just like bracket subetting (e.g. `diamonds[40_200:, ]`, `diamonds[diamonds$x > 8, ]`, or the base R function `subset(diamonds, x > 8)`). Again, it works well with piping. i
+* grouping: `group_by()`. Split a data frame into invisible groups. Any **dplyr** operation on that data frame will be performed on each group of unique variables
+* summarising: `summarise()`. Calculates a **single** value per group of a data frame. You will always get back a new data frame with as many lines as there are unique groups in the original data frame.
+* mutating (adding columns): `mutate()`. Calculates a **unique** value for each row of the original data frame. You get back the original data frame, with one or more new columns added.
+
+# Code from lecture
+
+Split-apply-combine is a good idea - but you would never want to do it manually. 
+
+Let's look at the `mtcars` data set. Say we want to know the average mileage of cars as a function of the number of cylinders. We could manually split by cylinders, apply the mean function, and combine the results manually:
+
+```{r}
+# Check the unique values of cylinders
+print(unique(mtcars$cyl))
+```
+
+```{r}
+mean.4.cyl <- mean(mtcars[mtcars$cyl == 4, "mpg"])
+mean.6.cyl <- mean(mtcars[mtcars$cyl == 6, "mpg"])
+mean.8.cyl <- mean(mtcars[mtcars$cyl == 8, "mpg"])
+# etc..
+combined <- data.frame(
+  cyl = c(4, 6, 8),
+  mean.mpg = c(mean.4.cyl, mean.6.cyl, mean.8.cyl)
+)
+
+print(combined)
+```
+
+That was a pain to type out, and it is very easy to make a dumb mistake. There's got to be a better way! 
+
+The whole point of **dplyr** is to create a better way.
+
+
+
+```{r, message=FALSE}
+# tidyverse day today!!!
+library(tidyverse)
+library(gapminder)
+```
+
+
+## `select()`
+
+`select()` returns columns of a data frame:
+
+```{r}
+year_country_gdp <- select(gapminder, country, gdpPercap, year)
+glimpse(year_country_gdp)
+```
+
+## `filter()`
+
+`filter()` returns rows of a data frame. 
+
+```{r}
+year_country_gdp <- gapminder %>% 
+  filter(continent == "Europe") %>% 
+  select(year, country, gdpPercap)
+```
+
+Note how the `%>%` operator is working here: it feeds the object in front of it as the 'invisible' first argument to the function that follows it.
+
+So we can't write
+
+```{r, error = TRUE}
+filter(continent == "Europe")
+```
+
+
+...but we can write
+```{r, eval = FALSE}
+gapminder %>% 
+  filter(continent == "Europe")
+```
+
+because that is equivalent to writing
+
+```{r, eval = FALSE}
+filter(gapminder, continent == "Europe")
+```
+
+We can also assign the object at the end of the chain of piped operations. 
+
+```{r}
+gapminder %>% 
+  filter(continent == "Europe") %>% # my research study focuses on Europe
+  select(year, country, gdpPercap) -> year_country_gdp
+```
+That sort of makes logical sense: we start with a data frame, do some stuff to it, and and the end assign the result to an object, in this case `year_country_gdp`. However, I don't particularly like that convention, because we are used to seeing the object that is being assigned a value as the first bit of a line of code. For the purposes of this class, I discourage you from using that syntax. 
+
+
+
+
+
+# `group_by()`
+
+So far these functions are kind of pointless; they don't really offer many advantages above base R. However, they get really useful when we automatically perform them on multiple subsets of a data frame, using `group_by()`.
+
+Note that `group_by()` changes the class of the data frame: it transforms the tibble into a subclass of tibbles named `grouped_df`. 
+
+```{r}
+str(gapminder)
+```
+```{r}
+str(gapminder %>% group_by(continent))
+```
+
+## `summarise()`
+
+`summarise()` (or, if you prefer, `summarize()`) returns a *single* value per unique group of the data frame. We can create multiple new columns with multiple statements within the `summarise()` function, like so. Note that we automatically drop every column that isn't in the `group_by()` statement, because it is always possible that there are multiple values for other columns within each group, which would prevent us from having one row per unique value of the grouping variable.
+
+```{r}
+gdp_bycontinents <- gapminder %>%
+  group_by(continent) %>%
+  summarise(mean.gdpPercap = mean(gdpPercap, na.rm = TRUE),
+            sd.gdpPercap = sd(gdpPercap, na.rm = TRUE))
+```
+
+Sometimes we want to preserve extra columns, even though they do not offer any new information. Here, this only works because we are sure that each country only belongs to one continent. We would get screwy results if some country had been classified as belonging to more than one continent over time.
+
+```{r}
+p_gdp_country <- gapminder %>%
+  group_by(continent, country) %>%
+  summarise(mean.gdpPercap = mean(gdpPercap, na.rm = TRUE)) %>%
+  ggplot(aes(x = continent, y = mean.gdpPercap)) + 
+  geom_boxplot()
+print(p_gdp_country)
+```
+
+
+
+## `mutate()`
+
+`mutate()` is the counterpart to `summarise()`: it gives us one result per row of the original data frame. It doesn't really do anything base R subsetting doesn't do, except that it works nicely with piping.
+
+```{r}
+gapminder$pop.mil <- gapminder$pop / 1e6 # the base R way to add columns
+```
+
+
+Say, for instance, we want to calculate mean GDP in billions of dollars, but we want to exclude countries with a life expectancy less than 25 for whatever reason:
+
+```{r}
+gapminder_bycontinent_byyear_above25 <- gapminder %>%
+  mutate(gdp.billion = ifelse(lifeExp > 25, gdpPercap * pop / 1e9, NA)) %>%
+  group_by(continent, year) %>%
+  summarise(mean.gdpPercap = mean(gdpPercap, na.rm = TRUE),
+            sd.gdpPercap = sd(gdpPercap, na.rm = TRUE),
+            mean.gdp.billion  = mean(gdp.billion, na.rm = TRUE))
+
+```
+
+Here we're starting to see the power of piping together **dplyr** functions: this code would have required dozens of lines in base R, it would have been hard to read, and easy to screw up. **dplyr** makes it easy!
+
+**Please be sure you can understand every part of the code above.** Bug your group-mates until you are totally comfortable with it! If you can understand this code, you are primed to do a lot of stuff in R. 
+
+# Postscript
+
+Why did the original example of manual subsetting I tried in class not work?
+Hint: look at the difference between `gapminder` and `mtcars`:
+
+```{r}
+class(mtcars)
+```
+
+```{r}
+class(gapminder)
+```
+`gapminder` is a tibble (`tbl_df`) whereas `mtcars` is a plain-jane data frame. Note that base R subsetting works differently: 
+```{r}
+class(mtcars[ , "mpg"])
+```
+With a data frame, `[` subsetting (or `$` subsetting) gives us a vector.
+```{r}
+class(gapminder[ , "gdpPercap"])
+```
+
+However, **dplyr** has defined a different method for the `[` function: `[` calls totally different code on tibbles than it does on data frames, so that it returns 1-column data frame rather than a vector~

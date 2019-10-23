@@ -1,0 +1,97 @@
+---
+title: 'Homework 5: Basic R and intro to the tidyverse'
+author: ~
+date: '2019-09-18'
+slug: homework-5-basic-r-and-intro-to-the-tidyverse
+categories: []
+tags: []
+---
+
+
+
+<div id="vector-coercion" class="section level1">
+<h1>Vector coercion:</h1>
+<ol style="list-style-type: decimal">
+<li>Explain what data type each vector will be coerced to, and why.</li>
+</ol>
+<pre class="r"><code>c(TRUE, FALSE)
+c(&quot;a&quot;, FALSE)
+c(7, &quot;f&quot;)</code></pre>
+</div>
+<div id="factors" class="section level1">
+<h1>Factors</h1>
+<p>Load the <code>gapminder</code> data frame via the <strong>gapminder</strong> package:</p>
+<pre class="r"><code>library(gapminder)</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li><p>Create a new data frame called <code>gapminder_fake</code>. Add a new row, <em>before</em> all other rows, with the following values:</p>
+<ul>
+<li><code>country</code> = “Florin”</li>
+<li><code>continent</code> = “Antarctica”</li>
+<li><code>year</code> = 2020</li>
+<li><code>lifeExp</code> = 83</li>
+<li><code>pop</code> = 7</li>
+<li><code>gdpPercap</code> = 1023</li>
+</ul></li>
+</ol>
+</div>
+<div id="subsetting-data-frames-and-lists-in-base-r" class="section level1">
+<h1>Subsetting data frames and lists in base R</h1>
+<div id="subsetting-data-frames" class="section level2">
+<h2>Subsetting data frames</h2>
+<ol start="3" style="list-style-type: decimal">
+<li><p>Create a data frame that consists of the first 5 rows of <code>gapminder</code></p></li>
+<li><p>Create a data frame that consists of 20 <em>randomly selected</em> rows of <code>gapminder</code>. Hint: look at the <code>sample()</code> function. (Use base R)</p></li>
+<li><p>Create a data frame called <code>milennial_europe</code> that contains only the rows in <code>gapminder</code> that correspond to countries in Europe, after 2000</p></li>
+<li><p>Explain what the following code does by turning it into an English-language sentence</p></li>
+</ol>
+<pre class="r"><code>mean(gapminder[gapminder$continent == &quot;Africa&quot;, &quot;gdpPercap&quot;])</code></pre>
+</div>
+<div id="subsetting-lists-that-arent-data-frames" class="section level2">
+<h2>Subsetting lists that aren’t data frames</h2>
+<ol start="7" style="list-style-type: decimal">
+<li><p>Create a list, that itself contains:</p>
+<ul>
+<li>the <code>mtcars</code> data frame</li>
+<li>a character vector</li>
+<li>a <strong>ggplot2</strong> object</li>
+</ul></li>
+</ol>
+<p>Make sure each element is named.</p>
+<ol start="8" style="list-style-type: decimal">
+<li>Using base R, access the following from the list you just created:</li>
+</ol>
+<ul>
+<li>The second element of the list (by index, not name)</li>
+<li>The character vector (by name). Ensure that the thing that is returned is a character vector, not a list. Hint: pay attention to the difference between <code>[]</code> and <code>[[]]</code> when accessing list elements. Read on this in Advanced R Ch 3.5.</li>
+<li>The element of the ggplot2 object called “labels”</li>
+<li>All the rows of the <code>mtcars</code> data frame for which <code>qsec</code> is less than 17</li>
+</ul>
+</div>
+</div>
+<div id="tidyverse" class="section level1">
+<h1>Tidyverse</h1>
+<p>All of this section of the homework should be done using <strong>tidyverse</strong> as much as possible, and the <code>gapminder</code> data set.</p>
+<div id="pipes" class="section level2">
+<h2>Pipes</h2>
+<ol start="9" style="list-style-type: decimal">
+<li>Take the following code, and rewrite it using the same functions but without using any pipe operators. (Probably best to turn it into multiple command, rather than one enormous command, but that’s up to you.)</li>
+</ol>
+<pre class="r"><code>year_country_gdp_euro &lt;- gapminder %&gt;%
+    filter(continent == &quot;Europe&quot;) %&gt;%
+    select(year, country, gdpPercap)</code></pre>
+</div>
+<div id="grouping" class="section level2">
+<h2>Grouping</h2>
+<ol start="10" style="list-style-type: decimal">
+<li><p>Write a single command to create a data frame containing the mean (<code>mean()</code>)and standard deviation (<code>sd</code>) of life expectancy for each year, of all countries in the Americas. The answer should have 3 columns and 12 rows. <strong>A note on the confusion from class:</strong> I want average &amp; standard deviaion of life expectancy across all countries in the Americas, separately in each year. So: average life expectancy in 1952, average life expectency in 1957, etc. There are 12 unique years, so the data frame will have 12 rows.</p></li>
+<li><p>Make a data frame containing the <em>number</em> of countries in each continent for each year.</p></li>
+<li><p>Make a data frame continaing the top 3 countries, in terms of life expectancy, for each continent, in each year. This data frame should have a column that tells us the overall rank of each country in the world in terms of life expectency (i.e., 1 for the highest life expectency, 2 for second highest, etc.).</p></li>
+</ol>
+</div>
+</div>
+<div id="late-breaking-join-question" class="section level1">
+<h1>Late-breaking join question</h1>
+<ol start="13" style="list-style-type: decimal">
+<li>Use the in-class script to load and pre-process the <code>countries_data</code> data frame. Using <code>dplyr</code> syntax and one of the <code>join</code> functions, identify which country names are in <code>countries_data</code> that aren’t in <code>gapminder</code>. Hint: look over the <a href="https://cran.r-project.org/web/packages/dplyr/vignettes/two-table.html">“two-table verbs” vignette</a> here, and think about all of the <code>join</code> functions available. You will also probably want to use <code>summarise()</code> to get one row per grouping variable, or (if you venture into base R) the <code>unique</code> function to see each unique value of a vector.</li>
+</ol>
+</div>

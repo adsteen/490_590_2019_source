@@ -1,0 +1,83 @@
+---
+title: 'Lecture notes: Reshaping with tidyr'
+author: ~
+date: '2019-09-23'
+slug: lecture-notes-reshaping-with-tidyr
+categories: []
+tags: []
+---
+
+# Resources
+
+* Software Carpentry [tidyr lesson](http://swcarpentry.github.io/r-novice-gapminder/14-tidyr/index.html)
+    * [Gapminder in wide format](https://raw.githubusercontent.com/swcarpentry/r-novice-gapminder/gh-pages/_episodes_rmd/data/gapminder_wide.csv)
+    * Remember that the "standard" (long-ish) `gapminder` data set can be loaded from the **gapminder** package
+* [Tidyr homepage](https://tidyr.tidyverse.org/)
+* The [tidy data chapter](https://r4ds.had.co.nz/tidy-data.html) in R for Data Science.
+
+## Useful ggplot2 worked examples
+
+* Claus Wilke's guide to [publishable ggplots](https://wilkelab.org/practicalgg/). (This isn't relevant to today's lesson, but it's a useful resource).
+
+# Reshaping data with **tidyr**
+
+Think about what a 'long' format data frame is: each row is an observation, and each column is a variable. In its purest form, a long-format data frame will have a single column containing data, and the rest of the columns will be descriptors of that data, or ID variables. 
+
+Does `gapminder` meet those criteria?
+```{r, message = FALSE}
+library(tidyverse)
+library(gapminder)
+glimpse(gapminder)
+```
+
+Not really! Three of the rows are descriptors (`country`, `continent`, and `year`), while the rest contain data (`pop`, `lifeExp`, and `gdpPercap`). Let's use the **tidyr** package, which we have loaded via **tidyverse**, to learn how to reshape the data.
+
+**IMPORTANT NOTE:** Some new functions, `pivot_longer()` and `pivot_wider()` have been added to tidyverse, as described [here](https://tidyr.tidyverse.org/articles/pivot.html). These are meant to be more intuitive than what I describe below. It might be worth your time to experiment with these a bit to see how you like them compared to `spread()` and `gather()`.
+
+We'll often get data in a wide format, in part because that format makes sense for Excel, and it is often more human-readable. I'll use this opportuntiy to show a neat feature of the **readr** package's `read_csv()` (note the difference from base R's `read.csv()`).
+
+
+
+```{r, message = FALSE}
+gap_wide <- read_csv("https://raw.githubusercontent.com/swcarpentry/r-novice-gapminder/gh-pages/_episodes_rmd/data/gapminder_wide.csv")
+glimpse(gap_wide) # display the number of columns
+```
+
+Yikes: 38 columns. 
+
+Let's turn this into a long data frame. To do this, we need to distinguish between columns that contain data, and columns that serve as identifiers for the data. In this example, `continent` and `country` are clearly identifiers. `year` is a bit of a judgement call - it has a numeric value, so it kind of looks like data. However, it isn't really something you measure, like population or life expectency. 
+
+In this example, we'll use the `starts_with()` functions to define the columns that count as data: any column whose name starts with "pop", "lifeExp", or "gdpPercap".
+
+
+```{r}
+gap_long <- gap_wide %>%
+  gather(key = obstype_year, value = obs_values, 
+         starts_with('pop'), starts_with('lifeExp'), starts_with('gdpPercap'))
+glimpse(gap_long)
+```
+
+For my money, the syntax is easier to understand if we define the columns that *don't* contain data, using the `-` operator:
+
+```{r}
+gap_long_alt <- gap_wide %>%
+  gather(key = obstype_year, value = obs_values,
+         -continent, -country)
+glimpse(gap_long_alt)
+```
+This has the same effefct, but note that the values of `obstype_year` are ordered differently: the first row contains `gdpPercap_1952` instead of `pop_1952`. However, in general, *the order of rows of a data frame doesn't matter*, so this is not a big deal.
+
+Note that this is not a terribly useful format for our data: the original, not-quite-long format of `gapminder` makes more sense, because population and life expetency are different quantities with different units, and they don't really belong in the same column. For this, we can use the `separate()` function. Note that the column names are in quotation makrs here, because they're the names of new columns rather than existing columns.
+
+```{r}
+gap_intermediate <- gap_long %>% 
+  separate(obstype_year, into = c('obs_type', 'year'), sep = "_")
+glimpse(gap_intermediate)
+```
+Lastly, the years are listed as characters. We'll want to reformulate them as numbers. We could do this using `dplyr::mutate()` to redefine the column, but it is just as easy to use `$` syntax since we're not piping together any statements. 
+
+```{r}
+gap_intermediate$year <- as.integer(gap_intermediate$year)
+str(gap_intermediate$year)
+```
+

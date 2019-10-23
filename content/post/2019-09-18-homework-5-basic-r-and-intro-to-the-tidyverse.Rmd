@@ -1,0 +1,100 @@
+---
+title: 'Homework 5: Basic R and intro to the tidyverse'
+author: ~
+date: '2019-09-18'
+slug: homework-5-basic-r-and-intro-to-the-tidyverse
+categories: []
+tags: []
+---
+
+```{r, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+# Vector coercion:
+
+1. Explain what data type each vector will be coerced to, and why.
+
+```{r}
+c(TRUE, FALSE)
+c("a", FALSE)
+c(7, "f")
+```
+
+# Factors
+
+Load the `gapminder` data frame via the **gapminder** package: 
+```{r}
+library(gapminder)
+```
+
+2. Create a new data frame called `gapminder_fake`. Add a new row, *before* all other rows, with the following values:
+
+    * `country` = "Florin"
+    * `continent` = "Antarctica"
+    * `year` = 2020
+    * `lifeExp` = 83
+    * `pop` = 7
+    * `gdpPercap` = 1023
+
+# Subsetting data frames and lists in base R
+
+## Subsetting data frames
+
+3. Create a data frame that consists of the first 5 rows of `gapminder`
+
+4. Create a data frame that consists of 20 *randomly selected* rows of `gapminder`. Hint: look at the `sample()` function. (Use base R)
+
+5. Create a data frame called `milennial_europe` that contains only the rows in `gapminder` that correspond to countries in Europe, after 2000
+
+6. Explain what the following code does by turning it into an English-language sentence
+
+```{r}
+mean(gapminder[gapminder$continent == "Africa", "gdpPercap"])
+```
+
+
+## Subsetting lists that aren't data frames
+
+7. Create a list, that itself contains:
+
+    * the `mtcars` data frame
+    * a character vector
+    * a **ggplot2** object
+
+Make sure each element is named.
+
+8. Using base R, access the following from the list you just created:
+
+* The second element of the list (by index, not name)
+* The character vector (by name). Ensure that the thing that is returned is a character vector, not a list. Hint: pay attention to the difference between `[]` and `[[]]` when accessing list elements. Read on this in Advanced R Ch 3.5.
+* The element of the ggplot2 object called "labels"
+* All the rows of the `mtcars` data frame for which `qsec` is less than 17 
+
+# Tidyverse
+
+All of this section of the homework should be done using **tidyverse** as much as possible, and the `gapminder` data set.
+
+## Pipes
+
+9. Take the following code, and rewrite it using the same functions but without using any pipe operators. (Probably best to turn it into multiple command, rather than one enormous command, but that's up to you.)
+
+```{r}
+year_country_gdp_euro <- gapminder %>%
+    filter(continent == "Europe") %>%
+    select(year, country, gdpPercap)
+```
+
+## Grouping
+
+10. Write a single command to create a data frame containing the mean (`mean()`)and standard deviation (`sd`) of life expectancy for each year, of all countries in the Americas. The answer should have 3 columns and 12 rows. **A note on the confusion from class:** I want average & standard deviaion of life expectancy across all countries in the Americas, separately in each year. So: average life expectancy in 1952, average life expectency in 1957, etc. There are 12 unique years, so the data frame will have 12 rows.
+
+11. Make a data frame containing the *number* of countries in each continent for each year. 
+
+12. Make a data frame continaing the top 3 countries, in terms of life expectancy, for each continent, in each year. This data frame should have a column that tells us the overall rank of each country in the world in terms of life expectency (i.e., 1 for the highest life expectency, 2 for second highest, etc.).
+
+# Late-breaking join question
+
+13. Use the in-class script to load and pre-process the `countries_data` data frame. Using `dplyr` syntax and one of the `join` functions, identify which country names are in `countries_data` that aren't in `gapminder`. Hint: look over the ["two-table verbs" vignette](https://cran.r-project.org/web/packages/dplyr/vignettes/two-table.html) here, and think about all of the `join` functions available. You will also probably want to use `summarise()` to get one row per grouping variable, or (if you venture into base R) the `unique` function to see each unique value of a vector.
+
+

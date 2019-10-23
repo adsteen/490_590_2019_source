@@ -1,0 +1,95 @@
+---
+title: 'Lecture notes: A few comments on color scales'
+author: Drew
+date: '2019-09-16'
+slug: lecture-notes-a-few-comments-on-color-scales
+categories: []
+tags: []
+---
+
+
+
+<div id="types-of-color-scales-for-types-of-data" class="section level1">
+<h1>Types of color scales for types of data</h1>
+<ul>
+<li>Qualitative color scales: Data in <strong>unordered</strong> categories
+<ul>
+<li>e.g. regions of the country (Northeast, Midwest, South)</li>
+</ul></li>
+<li>Sequential color scales: Data in an <strong>ordered</strong> variable
+<ul>
+<li>e.g. income (continuous numeric variable ranging from $0 to some high number)</li>
+</ul></li>
+<li>Diverging color scales: Data in that <strong>diverge</strong> from some <strong>neutral</strong> midpoint
+<ul>
+<li>e.g. relative values of a continuous numeric variable compared to a mean, where negative values indicate lower than average and positive values indicate higher than average. Temperature anomolies are a common example in geoscience.</li>
+<li>Note that I don’t think Fig 4-6 in Wilke is a great example. Here, “percent of population of counties identifying as white” is mapped to a diverging color scale, with 50% as ‘neutral’. But 50% white people probably isn’t ‘neutral’ in any sense.</li>
+<li>A better example of the diverging scale is if Willke had calcualted the average fraction of the population of the whole state that identifies as white, and represented whether each county had higher or lower fraction compared to the state average.</li>
+</ul></li>
+</ul>
+<pre class="r"><code>library(dviz.supp)
+
+theme_set(theme_minimal())
+
+popgrowth_df &lt;- left_join(US_census, US_regions) %&gt;%
+    group_by(region, division, state) %&gt;%
+    summarize(pop2000 = sum(pop2000, na.rm = TRUE),
+              pop2010 = sum(pop2010, na.rm = TRUE),
+              popgrowth = (pop2010-pop2000)/pop2000,
+              area = sum(area)) %&gt;%
+    arrange(popgrowth) %&gt;%
+    ungroup() %&gt;%
+    mutate(state = factor(state, levels = state),
+           region = factor(region, levels = c(&quot;West&quot;, &quot;South&quot;, &quot;Midwest&quot;, &quot;Northeast&quot;)))
+
+# make color vector in order of the state
+region_colors &lt;- c(&quot;#E69F00&quot;, &quot;#56B4E9&quot;, &quot;#009E73&quot;, &quot;#F0E442&quot;)
+region_colors_dark &lt;- darken(region_colors, 0.4)
+state_colors &lt;- region_colors_dark[as.numeric(popgrowth_df$region[order(popgrowth_df$state)])]
+
+p_region_growth &lt;- ggplot(popgrowth_df, aes(x = state, y = 100*popgrowth, fill = region)) + 
+  geom_col() + 
+  scale_y_continuous(
+    limits = c(-.6, 37.5), expand = c(0, 0),
+    labels = scales::percent_format(accuracy = 1, scale = 1),
+    name = &quot;population growth, 2000 to 2010&quot;
+  ) +
+  scale_fill_manual(values = region_colors) +
+  coord_flip() + 
+  #theme_dviz_vgrid(12, rel_small = 1) +
+  theme(axis.title.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.ticks.length = unit(0, &quot;pt&quot;),
+        axis.text.y = element_text(size = 10, color = state_colors),
+        legend.position = c(.56, .68),
+        #legend.text = element_text(color = region_colors),
+        legend.background = element_rect(fill = &quot;#ffffffb0&quot;))
+print(p_region_growth)</code></pre>
+<p><img src="/490_590_2019/post/2019-09-16-lecture-notes-a-few-comments-on-color-scales_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p><a href="https://colorbrewer2.org">Colorbrewer2</a> is a great resource for good color schemes. Using the <code>scale_color_brewer()</code> and <code>scale_fill_brewer()</code> functions, you can get automatically-assigned color schemes. Alternately, you can specify the <code>type</code> (sequential, diverging, or qualitative), or the specific palette (I find Dark2 is pretty great for qualitative plots in print).</p>
+<pre class="r"><code># Use colorbrewer2 to get a qualitative scale
+p_region_growth +
+  scale_fill_brewer(type = &quot;qual&quot;)</code></pre>
+<p><img src="/490_590_2019/post/2019-09-16-lecture-notes-a-few-comments-on-color-scales_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<pre class="r"><code>p_region_growth +
+  scale_fill_brewer(palette = &quot;Dark2&quot;)</code></pre>
+<p><img src="/490_590_2019/post/2019-09-16-lecture-notes-a-few-comments-on-color-scales_files/figure-html/unnamed-chunk-2-2.png" width="672" /></p>
+<p>Note that there are, like, a billion color palette generators on the internet, and quite a few of these are available as an R package (see, for instance, the Wes Anderson color palette generator](<a href="https://github.com/karthik/wesanderson" class="uri">https://github.com/karthik/wesanderson</a>)). If <strong>colorbrewer2</strong> isn’t giving you colors you like, just ask your friend Google for help.</p>
+</div>
+<div id="colorblindness" class="section level1">
+<h1>Colorblindness</h1>
+<p>About 1% of men, and 8% of men of northwestern-European descent, are <a href="https://en.wikipedia.org/wiki/Color_blindness#Deuteranopia">red-green colorblind</a>. Thus, it is likely that some substantial fraction of your audience won’t be able to make sense of a plot if it isn’t colorblind-friendly. There are three good ways to identify colorblind-safe palettes.</p>
+<ul>
+<li>Be colorblind yourself, or have a friend who is. Run your plots by them. (I’m being a little facetious here, but I’d much rather get a personal opinion rather than rely on a simulator. Of course, to be complete, you’d need one friend with each different kind of colorblindness).</li>
+<li>Use the colorblind-safe palettes generated by <strong>colorbrewer2</strong>.</li>
+<li>Use a colorblindness simulator, like the R package <strong>colorblindr</strong>, or one of the many simulator websites, e.g. <a href="https://www.color-blindness.com/coblis-color-blindness-simulator/">Colblindor</a></li>
+</ul>
+</div>
+<div id="limits-of-color-scales" class="section level1">
+<h1>Limits of color scales</h1>
+<p>Color scales are easy to misuse. See Wilke, <a href="https://serialmentor.com/dataviz/color-pitfalls.html">Chapter 19</a> on this. Briefly:</p>
+<ul>
+<li>You can’t generally distinguish more than ~8 colors, so a qualitative scheme with more than 8 or colors will be difficult to interpret.</li>
+<li>Many common ‘rainbow’ color maps create perceptually non-monotonic color schemes. The <a href="https://blogs.mathworks.com/headlines/2018/10/10/a-dangerous-rainbow-why-colormaps-matter/">Jet scale</a> is a particularly serious offender in this regard, and is very frequently used. A much better alternative is the <a href="https://cran.r-project.org/web/packages/viridis/index.html">viridis</a> scale (note that package also has a bunch of different, perceptually-uniform scales). Google has also recently <a href="https://ai.googleblog.com/2019/08/turbo-improved-rainbow-colormap-for.html">released</a> a scale that looks promising.</li>
+</ul>
+</div>

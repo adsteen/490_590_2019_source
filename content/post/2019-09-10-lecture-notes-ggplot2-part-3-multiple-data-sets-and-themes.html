@@ -1,0 +1,89 @@
+---
+title: 'Lecture notes: ggplot2 part 3, multiple data sets and themes'
+author: ~
+date: '2019-09-10'
+slug: lecture-notes-ggplot2-part-3-multiple-data-sets-and-themes
+categories: []
+tags: []
+---
+
+
+
+<div id="good-style-for-writing-ggplot-code" class="section level1">
+<h1>Good style for writing ggplot code</h1>
+<p><strong>ggplot2</strong> can be though of as building a plot from layers (data, then mappings, then geoms, etc…) so our code should reflect this.</p>
+<p>Accordingly, we should write the code in a specific order:</p>
+<ol style="list-style-type: decimal">
+<li><code>ggplot()</code> call</li>
+<li>geoms (note that each geom is plotted on top of the previous one)</li>
+<li>stats</li>
+<li>scales</li>
+<li>facets</li>
+<li>themes and <code>ggtitle()</code></li>
+</ol>
+<p><strong>ggplot2</strong> requires that the <code>ggplot</code> function comes first, but after that it will allow you to write the plot in any order. However, the code will be much more readable if you write it in the order described above.</p>
+</div>
+<div id="ggplot2-appearance" class="section level1">
+<h1>ggplot2 Appearance</h1>
+<p>Use <code>theme()</code> to change the appearence of aspects of the plot that are not connected to data.</p>
+<ul>
+<li>There are a number of pre-built themes: <code>theme_minimal()</code>, <code>theme_classic()</code>, etc.</li>
+<li>Other users have built nifty themes as well: check the <code>ggthemes</code> <a href="https://yutannihilation.github.io/allYourFigureAreBelongToUs/ggthemes/">package</a> for things like <code>theme_economist()</code> and, for some reason, <code>theme_excel()</code>
+You can modify theme elements individually. <code>?theme</code> names all of the elements that can be modified</li>
+<li>Note that they are heierarchically organized: <code>text</code>, <code>axis.text</code>, <code>axis.text.x</code>, etc</li>
+<li>Each of these parameters accepts the output of an <code>element_</code> function:
+<ul>
+<li><code>element_text()</code></li>
+<li><code>element_rect()</code></li>
+<li><code>element_line()</code></li>
+<li><code>element_blank()</code> (makes the element disappear)</li>
+<li><code>element_grob()</code>, which is useful when manipulating plots at a very low level, but which you will not likely need to use.</li>
+</ul></li>
+</ul>
+<pre class="r"><code>library(tidyverse) # we&#39;re using ggplot2 and dplyr within the tidyverse
+library(gapminder)
+
+ggplot(gapminder, aes(x = year, y = lifeExp, colour = continent, group  = country)) + 
+  geom_line() + 
+  facet_wrap(~ continent) +
+  theme_minimal() + 
+  theme(text = element_text(family = &quot;Times&quot;),
+        axis.line.y = element_line(colour = &quot;red&quot;, linetype = 3))</code></pre>
+<p><img src="/490_590_2019/post/2019-09-10-lecture-notes-ggplot2-part-3-multiple-data-sets-and-themes_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+</div>
+<div id="plotting-multiple-data-sets-on-one-plot" class="section level1">
+<h1>Plotting multiple data sets on one plot</h1>
+<p>It may be important to plot multiple data sets on one plot. Most often I do this when I want to plot summary data on top of individual data points.</p>
+<p>To do this, we will use the <strong>dplyr</strong>, a <strong>tidyverse</strong> package, and the <code>%&gt;%</code> (pipe) operator. I’ll explain this over the next two weeks, but for now, here’s an example.</p>
+<pre class="r"><code># Calculate mean and sd of life expectancy each year, for each continent
+gap_summ &lt;- gapminder %&gt;%
+  group_by(continent, year) %&gt;% # splits the data frame into groups (but doesn&#39;t do anything)
+  summarise(mean.lifeExp = mean(lifeExp, na.rm = TRUE), # Summarise creates one row per unique group
+            sd.lifeExp = sd(lifeExp, na.rm = TRUE))
+
+# Add our summary dataset to the plot
+p_summary_example &lt;- ggplot(gapminder) + 
+  geom_line(aes(x = year, y = lifeExp, colour = continent, group = country)) + 
+  geom_pointrange(data = gap_summ, aes(x = year, 
+                                       y = mean.lifeExp, 
+                                       ymin = mean.lifeExp - sd.lifeExp, 
+                                       ymax = mean.lifeExp + sd.lifeExp)) + 
+  facet_wrap(~continent) + 
+  theme_minimal() + 
+  theme(text = element_text(family = &quot;Times&quot;),
+        axis.line.y = element_line(colour = &quot;red&quot;, linetype = 3))
+print(p_summary_example)</code></pre>
+<p><img src="/490_590_2019/post/2019-09-10-lecture-notes-ggplot2-part-3-multiple-data-sets-and-themes_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>Remember that any mapping (<code>aes()</code>) that is defined within the <code>ggplot()</code> function (so, <code>ggplot(gapminder, aes(x = year))</code>) is valid for the entire plot. This can cause problems if you define a mapping that doesn’t make sense for a certain geom, for instance <code>ymin</code> for <code>geom_point()</code>. Therefore, when you are plotting multiple data sets, you should generally define your mappings in the geoms.</p>
+</div>
+<div id="printing-and-saving" class="section level1">
+<h1>Printing and saving</h1>
+<p>Remember that the <code>ggplot()</code> function returns a list <em>which is a description of a plot</em>. The plot doesn’t get created until you print or save it. Thus, errors in the plot will often not get caught when you define the plot, only when you print or save it.</p>
+<p>The <code>ggsave()</code> function is a handy wrapper for the various functions such as <code>png()</code> and <code>jpg()</code> that R uses to open graphics devices. The syntax of <code>ggsave()</code> is a bit unusual for <strong>tidyverse</strong> functions in that its first argument is the filename of the plot, rather than the object that it is acting on. Note that the plot to save is guessed by the function <code>last_plot()</code>, so if you don’t specify which plot you want to save, you may get a different one than you meant to! This can be dangerous: it can cause you to save a different plot than you meant to. Accordingly, it is wise not to rely on <code>ggplot()</code> auto-print method, but to assign a descriptive name to all plots and to specify the name in the <code>ggsave()</code> function.</p>
+<pre class="r"><code>ggsave(&quot;plots/badplot.png&quot;, plot = p_summary_example, height = 3, width = 4, units = &quot;in&quot;, dpi = 300)</code></pre>
+<p>Sometimes it makes sense to use base R’s graphics devices to save plots:</p>
+<pre class="r"><code>tiff(filename = &quot;plots/badplot.tiff&quot;, compression = &quot;lzw&quot;, type = &quot;cairo&quot;)
+print(p_summary_example)
+dev.off()</code></pre>
+<p>Remember that the graphics device functions (<code>png()</code>, <code>jpg()</code>, etc) interact with your computer’s graphics systems, which makes their behavior very dependent on your specific system. For instance, I have to use the <code>cairo</code> system in order to compress a tiff on my machine, but that may not be the case on yours.</p>
+</div>

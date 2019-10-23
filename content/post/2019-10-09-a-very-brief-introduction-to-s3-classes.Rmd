@@ -1,0 +1,151 @@
+---
+title: A very brief introduction to S3 classes
+author: ~
+date: '2019-10-09'
+slug: a-very-brief-introduction-to-s3-classes
+categories: []
+tags: []
+---
+
+**DRAFT**: I've posted this without explaining how to write methods for new classes. I'll update shortly to include that.
+
+# Resources
+
+* This lecture was taken with minor changes from the Wickham [Chapter 13](https://adv-r.hadley.nz/s3.html) on S3 classes in Advanced R.
+
+# Classes and methods
+
+* There are two main reasons to use classes in R.
+    * It allows you to create well-defined and structured data objects, so that you can be (reasonably) sure that an object of a given class will be structured in a specific way.
+    * It allows you to define methods for your class, e.g. `print()` and `plot`.
+* R has at least four different object-oriented systems. These are called, logically enough, S3, S4, Reference Classes, and R6. For most users, S3 is what you want to use.
+
+## Introduction
+
+The thing that makes an R object belong to a class is that it has a `class` attribute. This is really simple: it is a bit like saying that something becomes a dog once you put a label on it that says "dog". 
+
+```{r, message=FALSE}
+library(sloop)
+f <- factor(c("a", "b", "c"))
+typeof(f)
+```
+
+We can remove the class label with `unclass()`. When we do that, we notice that `print()` looks different.
+
+```{r}
+unclass(f)
+```
+
+A *generic* isa function that behaves differently depending on what class of object we have passed to it. We can tell whether a function is a generic using `sloop::ftype()`:
+
+```{r}
+ftype(print)
+```
+
+```{r}
+ftype(unclass)
+```
+
+Generally methods can be identified because they have a `.` in the name, in the form of `generic.class()`, e.g. `print.data.frame()`. Here, `print` is a generic, and `print.data.frame()` is the function that is executed when we call `print` on a `data.frame`. Note, however, that lots of base R functions that are not methods also have `.` in the function name: for instance, `t.test()` is a generic.
+```{r}
+ftype(t.test)
+```
+
+```{r}
+ftype(print.data.frame)
+```
+
+## Assigning a class to an object
+
+We can assign a class to an object by setting the class attribute. This can be done directly when you create the object: 
+```{r}
+x <- structure(list(), class = "my_class")
+class(x)
+```
+
+but it is perhaps more instructive to see what happens when we do it after creating the object:
+```{r}
+x <- list()
+attr(x, "class")
+```
+It is NULL because we have not yet set any attributes. But we can set the attribute using `class()`
+```{r}
+class(x) <- "my_class"
+attr(x, "class")
+```
+Note that this allows you to set a class object to something that doesn't make sense. 
+```{r, results="asis", error=TRUE}
+mod <- lm(log(mpg) ~ log(disp), data = mtcars)
+class(mod)
+```
+```{r, error=TRUE}
+class(mod) <- "Date"
+print(mod)
+```
+Of course this doesn't work, because the code you would need to print a `Date` object won't work on an `lm` object.
+
+## Constructor functions
+
+Constructor functions create a valid instance of a class. They should always be named with the format `new_`, followed by the class of object they create. See other rules in the Advanced R chapter I'm ripping off here.
+```{r}
+new_Date <- function(x = double()) {
+  stopifnot(is.double(x))
+  structure(x, class = "Date")
+}
+
+new_Date(c(-1, 0, 1))
+```
+
+```{r}
+new_difftime <- function(x = double(), units = "secs") {
+  stopifnot(is.double(x))
+  units <- match.arg(units, c("secs", "mins", "hours", "days", "weeks"))
+
+  structure(x,
+    class = "difftime",
+    units = units
+  )
+}
+
+new_difftime(c(1, 10, 3600), "secs")
+```
+
+## Validators
+
+Constructors perform extremely basic checks to see that input data is of a valid type. It is wise to write validator functions to ensure that everything about the object you have just created meets the requirements of its class.
+```{r, error = TRUE}
+new_factor <- function(x = integer(), levels = character()) {
+  stopifnot(is.integer(x))
+  stopifnot(is.character(levels))
+
+  structure(
+    x,
+    levels = levels,
+    class = "factor"
+  )
+}
+
+validate_factor <- function(x) {
+  values <- unclass(x)
+  levels <- attr(x, "levels")
+
+  if (!all(!is.na(values) & values > 0)) {
+    stop(
+      "All `x` values must be non-missing and greater than zero",
+      call. = FALSE
+    )
+  }
+
+  if (length(levels) < max(values)) {
+    stop(
+      "There must be at least as many `levels` as possible values in `x`",
+      call. = FALSE
+    )
+  }
+
+  x
+}
+
+validate_factor(new_factor(1:5, "a"))
+```
+This validator function has given us a useful, interpretable error message.

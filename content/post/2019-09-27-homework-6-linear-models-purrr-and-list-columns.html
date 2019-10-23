@@ -1,0 +1,153 @@
+---
+title: 'Homework 6: linear models, purrr, and list-columns'
+author: ~
+date: '2019-09-27'
+slug: homework-6-linear-models-purrr-and-list-columns
+categories: []
+tags: []
+---
+
+
+
+<div id="linear-models" class="section level1">
+<h1>Linear models</h1>
+<ol style="list-style-type: decimal">
+<li>Using the <code>mtcars</code> data frame, create a linear model of <code>qsec</code> (quarter mile time in seconds) as a function of <code>mpg</code> (miles per gallon). <code>qsec</code> should be the dependant variable, and <code>mpg</code> is the independant variable.</li>
+<li>Use the <code>coef()</code> function to extract the coefficients</li>
+<li>Use the <code>summary()</code> function to view the coefficients</li>
+<li>Obtain the coefficients directly from the model object, using what you know about subsetting lists.</li>
+</ol>
+<!--
+
+```r
+library(tidyverse)
+m <- lm(qsec ~ mpg, data = mtcars)
+coef(m)
+```
+
+```
+## (Intercept)         mpg 
+##  15.3547689   0.1241366
+```
+-->
+<ol start="5" style="list-style-type: decimal">
+<li>Use the base R <code>plot()</code> function to create four diagnostic plots of the linear model.</li>
+<li>Use <strong>ggplot2</strong> to create a scatterplot of <code>qsec</code> vs <code>mpg</code> and overlay a linear regression with confidence bands.
+<!--
+
+```r
+plot(m)
+```
+
+<img src="/490_590_2019/post/2019-09-27-homework-6-linear-models-purrr-and-list-columns_files/figure-html/unnamed-chunk-2-1.png" width="672" /><img src="/490_590_2019/post/2019-09-27-homework-6-linear-models-purrr-and-list-columns_files/figure-html/unnamed-chunk-2-2.png" width="672" /><img src="/490_590_2019/post/2019-09-27-homework-6-linear-models-purrr-and-list-columns_files/figure-html/unnamed-chunk-2-3.png" width="672" /><img src="/490_590_2019/post/2019-09-27-homework-6-linear-models-purrr-and-list-columns_files/figure-html/unnamed-chunk-2-4.png" width="672" />
+--></li>
+<li>Load ggplot2, which contains the <code>diamonds</code> data set.
+<ol style="list-style-type: lower-alpha">
+<li>Use the <code>lm()</code> function to create a linear model of <code>price</code> as a function of <code>depth</code> and <code>carat</code> (both of which are continuous variables). Look at the <code>summary()</code> of that linear model object.</li>
+<li>Use <code>lm()</code> to create a linear model of price as a functionof <code>carat</code> (a continuous variable) and <code>clarity</code> (a factor). Look at the summary. How is it different?</li>
+</ol></li>
+</ol>
+<!--
+
+
+```r
+lm(price ~ depth + carat, data = diamonds) %>%
+  summary()
+```
+
+```
+## 
+## Call:
+## lm(formula = price ~ depth + carat, data = diamonds)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -18238.9   -801.6    -19.6    546.3  12683.7 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 4045.333    286.205   14.13   <2e-16 ***
+## depth       -102.165      4.635  -22.04   <2e-16 ***
+## carat       7765.141     14.009  554.28   <2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1542 on 53937 degrees of freedom
+## Multiple R-squared:  0.8507, Adjusted R-squared:  0.8507 
+## F-statistic: 1.536e+05 on 2 and 53937 DF,  p-value: < 2.2e-16
+```
+
+```r
+lm(price ~ carat + clarity, data = diamonds) %>%
+  summary()
+```
+
+```
+## 
+## Call:
+## lm(formula = price ~ carat + clarity, data = diamonds)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -17355.1   -639.9   -110.6    480.4  11162.8 
+## 
+## Coefficients:
+##             Estimate Std. Error  t value Pr(>|t|)    
+## (Intercept) -2977.27      13.11 -227.080   <2e-16 ***
+## carat        8440.06      12.65  667.132   <2e-16 ***
+## clarity.L    4216.78      33.65  125.297   <2e-16 ***
+## clarity.Q   -1931.41      31.87  -60.601   <2e-16 ***
+## clarity.C    1005.85      27.39   36.719   <2e-16 ***
+## clarity^4    -480.18      21.94  -21.883   <2e-16 ***
+## clarity^5     283.94      17.98   15.796   <2e-16 ***
+## clarity^6      12.66      15.68    0.808    0.419    
+## clarity^7     198.05      13.82   14.336   <2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1294 on 53931 degrees of freedom
+## Multiple R-squared:  0.8949, Adjusted R-squared:  0.8948 
+## F-statistic: 5.737e+04 on 8 and 53931 DF,  p-value: < 2.2e-16
+```
+-->
+</div>
+<div id="purrr-and-list-columns" class="section level1">
+<h1><strong>purrr</strong> and list-columns</h1>
+<ol start="8" style="list-style-type: decimal">
+<li>Use <strong>purrr</strong> to create a nested data frame with a list-column that contains a linear model of <code>price ~ carat</code> for each unique value of <code>clarity</code>.</li>
+<li>Next, add a column to that list that contains the slope of the relationship between <code>price</code> and <code>carat</code> for each unqiue value of <code>clarity</code>. Note that you will need to either
+<ol style="list-style-type: lower-alpha">
+<li>Define a function to create the specific kind of linear models you want to make first, and then use <code>purrr::map()</code> to apply that function to each row of the nested data frame .</li>
+<li>Use <code>purrr::map()</code> with an anonymous function, defined inside the <code>map()</code> function call</li>
+</ol></li>
+</ol>
+<!--
+
+```r
+library(purrr)
+d <- diamonds %>%
+  group_by(clarity) %>%
+  nest() #%>%
+
+mod_fun <- function(df){
+  lm(price ~ carat, data = df) 
+}
+ 
+mod_df2 <- d %>%
+  mutate(lin_mod = map(data, function(x) lm(price ~ carat, data = x)))
+
+mod_df <- d %>% 
+  mutate(lin_mod = map(data, mod_fun))
+```
+-->
+<ol start="10" style="list-style-type: decimal">
+<li>Finally add a new, numeric column to your data frame, containing the value of the slope of <code>price ~ carat</code> for each unique value of <code>clarity</code>. Hint: <code>map()</code> returns a list-column, but you want a numeric column. Look at <code>map_dbl()</code>, which returns a ‘double-precision’ (numeric) value for each list element.
+<!--
+
+```r
+mod_df3 <- mod_df %>%
+  mutate(slopes = map_dbl(lin_mod, function(x) coefficients(x)[2]))
+```
+--></li>
+</ol>
+</div>

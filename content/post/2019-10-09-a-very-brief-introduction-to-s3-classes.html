@@ -1,0 +1,138 @@
+---
+title: A very brief introduction to S3 classes
+author: ~
+date: '2019-10-09'
+slug: a-very-brief-introduction-to-s3-classes
+categories: []
+tags: []
+---
+
+
+
+<p><strong>DRAFT</strong>: I’ve posted this without explaining how to write methods for new classes. I’ll update shortly to include that.</p>
+<div id="resources" class="section level1">
+<h1>Resources</h1>
+<ul>
+<li>This lecture was taken with minor changes from the Wickham <a href="https://adv-r.hadley.nz/s3.html">Chapter 13</a> on S3 classes in Advanced R.</li>
+</ul>
+</div>
+<div id="classes-and-methods" class="section level1">
+<h1>Classes and methods</h1>
+<ul>
+<li>There are two main reasons to use classes in R.
+<ul>
+<li>It allows you to create well-defined and structured data objects, so that you can be (reasonably) sure that an object of a given class will be structured in a specific way.</li>
+<li>It allows you to define methods for your class, e.g. <code>print()</code> and <code>plot</code>.</li>
+</ul></li>
+<li>R has at least four different object-oriented systems. These are called, logically enough, S3, S4, Reference Classes, and R6. For most users, S3 is what you want to use.</li>
+</ul>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>The thing that makes an R object belong to a class is that it has a <code>class</code> attribute. This is really simple: it is a bit like saying that something becomes a dog once you put a label on it that says “dog”.</p>
+<pre class="r"><code>library(sloop)
+f &lt;- factor(c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;))
+typeof(f)</code></pre>
+<pre><code>## [1] &quot;integer&quot;</code></pre>
+<p>We can remove the class label with <code>unclass()</code>. When we do that, we notice that <code>print()</code> looks different.</p>
+<pre class="r"><code>unclass(f)</code></pre>
+<pre><code>## [1] 1 2 3
+## attr(,&quot;levels&quot;)
+## [1] &quot;a&quot; &quot;b&quot; &quot;c&quot;</code></pre>
+<p>A <em>generic</em> isa function that behaves differently depending on what class of object we have passed to it. We can tell whether a function is a generic using <code>sloop::ftype()</code>:</p>
+<pre class="r"><code>ftype(print)</code></pre>
+<pre><code>## [1] &quot;S3&quot;      &quot;generic&quot;</code></pre>
+<pre class="r"><code>ftype(unclass)</code></pre>
+<pre><code>## [1] &quot;primitive&quot;</code></pre>
+<p>Generally methods can be identified because they have a <code>.</code> in the name, in the form of <code>generic.class()</code>, e.g. <code>print.data.frame()</code>. Here, <code>print</code> is a generic, and <code>print.data.frame()</code> is the function that is executed when we call <code>print</code> on a <code>data.frame</code>. Note, however, that lots of base R functions that are not methods also have <code>.</code> in the function name: for instance, <code>t.test()</code> is a generic.</p>
+<pre class="r"><code>ftype(t.test)</code></pre>
+<pre><code>## [1] &quot;S3&quot;      &quot;generic&quot;</code></pre>
+<pre class="r"><code>ftype(print.data.frame)</code></pre>
+<pre><code>## [1] &quot;S3&quot;     &quot;method&quot;</code></pre>
+</div>
+<div id="assigning-a-class-to-an-object" class="section level2">
+<h2>Assigning a class to an object</h2>
+<p>We can assign a class to an object by setting the class attribute. This can be done directly when you create the object:</p>
+<pre class="r"><code>x &lt;- structure(list(), class = &quot;my_class&quot;)
+class(x)</code></pre>
+<pre><code>## [1] &quot;my_class&quot;</code></pre>
+<p>but it is perhaps more instructive to see what happens when we do it after creating the object:</p>
+<pre class="r"><code>x &lt;- list()
+attr(x, &quot;class&quot;)</code></pre>
+<pre><code>## NULL</code></pre>
+<p>It is NULL because we have not yet set any attributes. But we can set the attribute using <code>class()</code></p>
+<pre class="r"><code>class(x) &lt;- &quot;my_class&quot;
+attr(x, &quot;class&quot;)</code></pre>
+<pre><code>## [1] &quot;my_class&quot;</code></pre>
+<p>Note that this allows you to set a class object to something that doesn’t make sense.</p>
+<pre class="r"><code>mod &lt;- lm(log(mpg) ~ log(disp), data = mtcars)
+class(mod)</code></pre>
+<p>[1] “lm”</p>
+<pre class="r"><code>class(mod) &lt;- &quot;Date&quot;
+print(mod)</code></pre>
+<pre><code>## Error in as.POSIXlt.Date(x): (list) object cannot be coerced to type &#39;double&#39;</code></pre>
+<p>Of course this doesn’t work, because the code you would need to print a <code>Date</code> object won’t work on an <code>lm</code> object.</p>
+</div>
+<div id="constructor-functions" class="section level2">
+<h2>Constructor functions</h2>
+<p>Constructor functions create a valid instance of a class. They should always be named with the format <code>new_</code>, followed by the class of object they create. See other rules in the Advanced R chapter I’m ripping off here.</p>
+<pre class="r"><code>new_Date &lt;- function(x = double()) {
+  stopifnot(is.double(x))
+  structure(x, class = &quot;Date&quot;)
+}
+
+new_Date(c(-1, 0, 1))</code></pre>
+<pre><code>## [1] &quot;1969-12-31&quot; &quot;1970-01-01&quot; &quot;1970-01-02&quot;</code></pre>
+<pre class="r"><code>new_difftime &lt;- function(x = double(), units = &quot;secs&quot;) {
+  stopifnot(is.double(x))
+  units &lt;- match.arg(units, c(&quot;secs&quot;, &quot;mins&quot;, &quot;hours&quot;, &quot;days&quot;, &quot;weeks&quot;))
+
+  structure(x,
+    class = &quot;difftime&quot;,
+    units = units
+  )
+}
+
+new_difftime(c(1, 10, 3600), &quot;secs&quot;)</code></pre>
+<pre><code>## Time differences in secs
+## [1]    1   10 3600</code></pre>
+</div>
+<div id="validators" class="section level2">
+<h2>Validators</h2>
+<p>Constructors perform extremely basic checks to see that input data is of a valid type. It is wise to write validator functions to ensure that everything about the object you have just created meets the requirements of its class.</p>
+<pre class="r"><code>new_factor &lt;- function(x = integer(), levels = character()) {
+  stopifnot(is.integer(x))
+  stopifnot(is.character(levels))
+
+  structure(
+    x,
+    levels = levels,
+    class = &quot;factor&quot;
+  )
+}
+
+validate_factor &lt;- function(x) {
+  values &lt;- unclass(x)
+  levels &lt;- attr(x, &quot;levels&quot;)
+
+  if (!all(!is.na(values) &amp; values &gt; 0)) {
+    stop(
+      &quot;All `x` values must be non-missing and greater than zero&quot;,
+      call. = FALSE
+    )
+  }
+
+  if (length(levels) &lt; max(values)) {
+    stop(
+      &quot;There must be at least as many `levels` as possible values in `x`&quot;,
+      call. = FALSE
+    )
+  }
+
+  x
+}
+
+validate_factor(new_factor(1:5, &quot;a&quot;))</code></pre>
+<pre><code>## Error: There must be at least as many `levels` as possible values in `x`</code></pre>
+<p>This validator function has given us a useful, interpretable error message.</p>
+</div>
+</div>

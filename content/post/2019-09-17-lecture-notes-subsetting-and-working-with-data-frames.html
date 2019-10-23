@@ -1,0 +1,196 @@
+---
+title: 'Lecture notes: Subsetting and working with data frames'
+author: ~
+date: '2019-09-17'
+slug: lecture-notes-subsetting-and-working-with-data-frames
+categories: []
+tags: []
+---
+
+
+
+<div id="resources" class="section level1">
+<h1>Resources</h1>
+<div id="split-apply-combine" class="section level2">
+<h2>Split-apply-combine</h2>
+<ul>
+<li><a href="https://www.jstatsoft.org/article/view/v040i01">Original paper</a> (although note that the package that paper describes, <strong>plyr</strong>, has been replaced by the tidyverse package <strong>dplyr</strong>, which has totally different syntax.)</li>
+<li>Software Carpentry lessons:
+<ul>
+<li><a href="https://swcarpentry.github.io/swc-releases/2016.06/r-novice-gapminder/12-plyr/">Split-apply-combine conceptual introduction</a></li>
+<li><a href="http://swcarpentry.github.io/r-novice-gapminder/13-dplyr/index.html">Implementation in <strong>dplyr</strong></a></li>
+<li>Note that, for some reason, the first Software Carpentry lesson is in <strong>plyr</strong> and the second is is in <strong>dplyr</strong>. This really makes no sense, as <strong>dplyr</strong> is the replacement for <strong>plyr</strong> - you’re not supposed to use them at the same time, and indeed loading them at the same time will cause some <a href="https://github.com/tidyverse/dplyr/issues/347">really weird stuff</a> to happen. So don’t do it.</li>
+</ul></li>
+</ul>
+</div>
+<div id="factors" class="section level2">
+<h2>Factors</h2>
+<ul>
+<li><a href="http://swcarpentry.github.io/r-novice-gapminder/04-data-structures-part1/index.html#factors">Software Carpentry</a></li>
+<li><a href="https://rstudio-education.github.io/hopr/r-objects.html#factors">Hands-On Programming with R</a></li>
+<li><a href="https://adv-r.hadley.nz/vectors-chap.html#s3-atomic-vectors">Advanced R</a></li>
+</ul>
+</div>
+<div id="subsetting" class="section level2">
+<h2>Subsetting</h2>
+<ul>
+<li><a href="http://swcarpentry.github.io/r-novice-gapminder/06-data-subsetting/index.html">Software Carpentry</a></li>
+<li><a href="https://rstudio-education.github.io/hopr/modify.html">HOPR on modifying values</a></li>
+<li><a href="https://adv-r.hadley.nz/subsetting.html">Advanced R, Chapter 4</a></li>
+</ul>
+</div>
+</div>
+<div id="split-apply-combine-1" class="section level1">
+<h1>Split-apply-combine</h1>
+<p>The underlying idea behind the tidyverse is the “split-apply-combine” philosophy, as described by Hadley Wickham <a href="https://www.jstatsoft.org/article/view/v040i01">here</a></p>
+<p>The basic idea is simple: virtually every data analysis pipeline can be understood as consisting of the following steps:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Split</strong> the data into groups (for instance, sites, individual samples, experimental treatments, etc.)</li>
+<li><strong>Apply</strong> some analytical procedure. This could be as simple as measuring an average value, or it could be some complex operation that requires many lines of code.</li>
+<li><strong>Combine</strong> the results of the analytical procedure, to allow comparisons among groups.</li>
+</ol>
+<p>The tidyverse encourages us to think about data analysis using this paradigm, and makes it quite easy to implement. We’ll spend the next few weeks learning how to implement this.</p>
+<p>The tidyverse is almost like a separate language - if you want, you could almost implement your whole data analytic pipeline using tidyverse syntax, without using any base R.</p>
+<p>Almost, but not quite. Base R is still very useful in a lot of situations. Also, the tidyverse is relatively new, not everyone likes it better than base R, and there’s a lot of code out there written in base R that you may want to reuse, study, or modify.</p>
+<p>So today we’re reviewing/expanding on some of the subsetting concepts we talked about at the start of the class. Then we’ll move on to implementing the split-apply-combine philosophy in the tidyverse, and from there move out to many of the other cool things you can do in tidyverse.</p>
+</div>
+<div id="factors-1" class="section level1">
+<h1>Factors</h1>
+<p>This is taken from the Software Carpentry gapminder <a href="http://swcarpentry.github.io/r-novice-gapminder/05-data-structures-part2/index.html#factors">lesson 5</a>.</p>
+<pre class="r"><code># re-create the cats data frame from a few weeks ago
+cats &lt;- data.frame(
+  coat = as.factor(c(&quot;calico&quot;, &quot;black&quot;, &quot;tabby&quot;, NA)), # note I&#39;m forcing hte data type, just to be sure
+  weight = c(2.1, 5.0, 3.2, 3.3),
+  likes_string = as.integer(c(1, 0, 1, 1)),
+  age = c(2, 3, 5, 9)
+)</code></pre>
+<p>Factors are funny: they look like character vectors, but they are actually integer vectors where each integer carries a label. We call the set of labels the ‘levels’ of the factor. The levels are coded as “attributes” of the integer vector.</p>
+<pre class="r"><code>attr(cats$coat, &quot;levels&quot;)</code></pre>
+<pre><code>## [1] &quot;black&quot;  &quot;calico&quot; &quot;tabby&quot;</code></pre>
+<p>Note that we can’t just append a new value to a factor, the way we could with a character vector. Instead, we need to first define the new level, which assigns the new label to a new integer in the factor’s attributes. Then, we add the element to the factor itself. Even though say that we’re adding <code>&quot;tortioseshell&quot;</code>, R is actually adding the integer 4, because the label “tortioseshell” is associated with the integer 4 in the factor.</p>
+<p>Notice that we can add rows to a data frame using the <code>rbind()</code> function (i.e., “row bind”), if we define the new row as a list.</p>
+<pre class="r"><code># add a new level
+levels(cats$coat) &lt;- c(levels(cats$coat), &quot;tortoiseshell&quot;) # First we define the new level
+cats &lt;- rbind(cats, list(&quot;tortoiseshell&quot;, 3.3, TRUE, 9)) # Second we add a new row, as a list, to the data frame
+cats</code></pre>
+<pre><code>##            coat weight likes_string age
+## 1        calico    2.1            1   2
+## 2         black    5.0            0   3
+## 3         tabby    3.2            1   5
+## 4          &lt;NA&gt;    3.3            1   9
+## 5 tortoiseshell    3.3            1   9</code></pre>
+<p>We could just as well define the new row as a data frame, in which case we have to explicitly create the row names of the new data frame, which must match the row names of the old data frame precisely.</p>
+<pre class="r"><code>cats &lt;- rbind(cats, data.frame(coat = &quot;tortoiseshell&quot;, 
+                               weight = 3.3,
+                               likes_string = TRUE,
+                               age = 9))
+
+# cats$coat &lt;- as.character(cats$coat)</code></pre>
+<p>Note that <code>as.numeric()</code> works for factors, but not for character vectors:</p>
+<pre class="r"><code>as.numeric(cats$coat)</code></pre>
+<pre><code>## [1]  2  1  3 NA  4  4</code></pre>
+<pre class="r"><code>as.numeric(c(&quot;calico&quot;, &quot;black&quot;, &quot;tabby&quot;, NA))</code></pre>
+<pre><code>## Warning: NAs introduced by coercion</code></pre>
+<pre><code>## [1] NA NA NA NA</code></pre>
+<div id="getting-rid-of-factors" class="section level2">
+<h2>Getting rid of factors</h2>
+<p>In general we want to avoid working with factors as possible. <code>as.character()</code> is great here:</p>
+<pre class="r"><code>as.character(cats$coat)</code></pre>
+<pre><code>## [1] &quot;calico&quot;        &quot;black&quot;         &quot;tabby&quot;         NA             
+## [5] &quot;tortoiseshell&quot; &quot;tortoiseshell&quot;</code></pre>
+<p>If we use <code>read.csv()</code> (or its cousins <code>read.table()</code>, <code>read.delim()</code>, etc.) to read data from a text file, we will want to override the default parameter that reads columns containing only characters (aka ‘strings’) as a factor:</p>
+<pre class="r"><code>gapminder &lt;- read.csv(&quot;../../data/gapminder_data.csv&quot;, stringsAsFactors = FALSE) # Note that my directory structure is a bit different from yours because of the way I build a website using this code
+str(gapminder)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    1704 obs. of  6 variables:
+##  $ country  : chr  &quot;Afghanistan&quot; &quot;Afghanistan&quot; &quot;Afghanistan&quot; &quot;Afghanistan&quot; ...
+##  $ year     : int  1952 1957 1962 1967 1972 1977 1982 1987 1992 1997 ...
+##  $ pop      : num  8425333 9240934 10267083 11537966 13079460 ...
+##  $ continent: chr  &quot;Asia&quot; &quot;Asia&quot; &quot;Asia&quot; &quot;Asia&quot; ...
+##  $ lifeExp  : num  28.8 30.3 32 34 36.1 ...
+##  $ gdpPercap: num  779 821 853 836 740 ...</code></pre>
+</div>
+</div>
+<div id="subsetting-1" class="section level1">
+<h1>Subsetting</h1>
+<p>Elements of a data frame are <em>indexed</em> by their rows first, and then columns. A blank space indicates “all of the elements”, So, <code>cats[4, ]</code> gives us all of the columns of the 4th row of <code>cats</code>.</p>
+<pre class="r"><code>cats[4, ]</code></pre>
+<pre><code>##   coat weight likes_string age
+## 4 &lt;NA&gt;    3.3            1   9</code></pre>
+<p>We can remove rows using negative subscripts</p>
+<pre class="r"><code>cats[-4, ]</code></pre>
+<pre><code>##            coat weight likes_string age
+## 1        calico    2.1            1   2
+## 2         black    5.0            0   3
+## 3         tabby    3.2            1   5
+## 5 tortoiseshell    3.3            1   9
+## 6 tortoiseshell    3.3            1   9</code></pre>
+<p>And we can specify multiple rows or columns with a vector.</p>
+<pre class="r"><code>cats &lt;- cats[c(-4, -5), ]</code></pre>
+<p>One very useful bit of syntax is to specify a range of rows or columns using the <code>:</code> operator, which creates a vector of integers:</p>
+<pre class="r"><code>1:3</code></pre>
+<pre><code>## [1] 1 2 3</code></pre>
+<p>This shows up in subsetting quite frequently:</p>
+<pre class="r"><code>cats[ , 1:3]</code></pre>
+<pre><code>##            coat weight likes_string
+## 1        calico    2.1            1
+## 2         black    5.0            0
+## 3         tabby    3.2            1
+## 6 tortoiseshell    3.3            1</code></pre>
+<div id="subsetting-with-indices-vs.booleans" class="section level2">
+<h2>Subsetting with indices vs. booleans</h2>
+<p>There are three major ways to subset an object in R:</p>
+<ul>
+<li>Subsetting by index</li>
+<li>Subsetting by name</li>
+<li>Subsetting by condition</li>
+</ul>
+<p>(Note that <a href="https://adv-r.hadley.nz/subsetting.html">Advanced R</a> breaks out 6 different ways to subset, and organizes those ways a little different to what I’ve done. Hadley is of course more precisely correct, but I think what I’m describing is a little easier to understand and covers most practical needs.)</p>
+<div id="subsetting-by-index" class="section level3">
+<h3>Subsetting by index</h3>
+<p>Above, we subsetted by index: if we want columns 1 through 3 of <code>cats</code>, we use brackets to ask for all the columns and the <em>column indices</em> 1 through 3.</p>
+<pre class="r"><code>cats[ , 1:3]</code></pre>
+<pre><code>##            coat weight likes_string
+## 1        calico    2.1            1
+## 2         black    5.0            0
+## 3         tabby    3.2            1
+## 6 tortoiseshell    3.3            1</code></pre>
+</div>
+<div id="subsetting-by-name" class="section level3">
+<h3>Subsetting by name</h3>
+<p>We could also ask for the elements by name. <strong>This is often a better idea than subsetting by index</strong>, especially with columns of data frames, because we can be sure of what we’re getting - i.e., we don’t have to worry about whether the columns got rearranged without us noticing:</p>
+<pre class="r"><code>cats[ , c(&quot;weight&quot;, &quot;likes_string&quot;, &quot;age&quot;)]</code></pre>
+<pre><code>##   weight likes_string age
+## 1    2.1            1   2
+## 2    5.0            0   3
+## 3    3.2            1   5
+## 6    3.3            1   9</code></pre>
+<p>This is similar to subsetting a column of a data frame using the <code>$</code> sign (e.g., <code>cats$weight</code>) but note that when we use <code>[]</code> we put the name of the element we want in quotation marks, and with <code>$</code> we don’t.</p>
+</div>
+<div id="subsetting-by-condition" class="section level3">
+<h3>Subsetting by condition</h3>
+<p>Condition, here, means logicals, i.e., TRUE or FALSE. It is often the case that we want only the data that satisfies some condition. Here we pass a vector of TRUEs and FALSEs, and we get back all the elements that correspond to a TRUE.</p>
+<pre class="r"><code>cats[ , c(FALSE, FALSE, TRUE, TRUE)]</code></pre>
+<pre><code>##   likes_string age
+## 1            1   2
+## 2            0   3
+## 3            1   5
+## 6            1   9</code></pre>
+<p>Of course we almost never generate that vector of logicals manually - most often, we generate it using a boolean expression, i.e., an expression that returns either TRUE or FALSE. So for example,</p>
+<pre class="r"><code>to.drop &lt;- names(cats) %in% c(&quot;age&quot;, &quot;likes_string&quot;)
+cats[ , !to.drop]</code></pre>
+<pre><code>##            coat weight
+## 1        calico    2.1
+## 2         black    5.0
+## 3         tabby    3.2
+## 6 tortoiseshell    3.3</code></pre>
+<p>Note that <code>!</code> means ‘not’; it turns all the TRUEs to FALSEs and vice-versa.</p>
+<p>Another common use would be to pick out all the rows that satisfy some condition. Say, for instance, we wanted all the rows for cats that weigh more than 3 pounds:</p>
+<pre class="r"><code>cats[cats$weight &gt; 3, ]</code></pre>
+<pre><code>##            coat weight likes_string age
+## 2         black    5.0            0   3
+## 3         tabby    3.2            1   5
+## 6 tortoiseshell    3.3            1   9</code></pre>
+<p>That works because <code>cats$weight &gt; 3</code> returns a vector with as many elements as there are elements in <code>cats$weight</code>, with TRUE for elements that are greater than 3 and FALSE otherwise.</p>
+</div>
+</div>
+</div>

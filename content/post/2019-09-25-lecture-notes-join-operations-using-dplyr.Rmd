@@ -1,0 +1,113 @@
+---
+title: 'Lecture notes: Join operations using dplyr'
+author: ~
+date: '2019-09-25'
+slug: lecture-notes-join-operations-using-dplyr
+categories: []
+tags: []
+---
+
+# Resources
+
+* The "two-table verbs" [vignette](https://cran.r-project.org/web/packages/dplyr/vignettes/two-table.html) for **dplyr**.
+    * **Note:** a vignette is a how-to guide for a package, and any reputable package will have one. A vignette complements the function documentation by demonstrating how you might use the package in real life, with concrete examples.
+* The [relational data](https://r4ds.had.co.nz/relational-data.html) chapter in R for Data Science.
+
+To learn about joining data frames, we'll use the data sets in the **nycflights13** package. The value of this data set is that `flights` is big: 336,776 rows!
+
+```{r, message=FALSE}
+library(nycflights13)
+library(tidyverse)
+
+# let's look at the data sets
+glimpse(flights)
+```
+
+```{r}
+glimpse(airlines)
+```
+
+Note that `flights` and `airlines` share a single variable, `carrier`. You can guess that we could add the carrier names to `flights` by joining the two data frames, by matching values of the `carrier` column in `flights` to the `carrier` column in `airlines`.
+
+Let's get rid of a few of the columns of flight for clarity, and do that join. 
+
+```{r}
+flights2 <- flights %>%
+  select(year:day, hour, origin, dest, tailnum, carrier)
+
+flights2 %>%
+  left_join(airlines) %>%
+  glimpse()
+```
+
+We did not explicitly specify which column we should join by, but R has noticed that the two data frames share a single column, `carrier`, and has used that column to make the join.
+
+Imagine that the two matching columns had different names, but the same information. We would have to specify which columns are common between the data frames.
+
+```{r}
+# Rename the 'carrier' column of flights to 'airline.code'
+flights2 <- flights2 %>%
+  rename(airline.code = carrier)
+
+left_joined_data <- flights2 %>%
+  left_join(airlines, by = c("airline.code" = "carrier"))
+glimpse(left_joined_data)
+```
+
+As it happens, the set of "carriers" in `flights` and `airlines` is identical.
+```{r}
+unique(airlines$carrier)
+```
+
+```{r}
+sort(unique(flights$carrier)) 
+```
+
+*(Side note: I used `sort()` to arrange the `flights` data into alphabetical order in order to make the comparison clearer. Note how we can call a bunch of functions in a row by placing them in nested parentheses: the above statement reads as "get the `carrier` vector from `flights`, find the unique values, and then sort them. However, even a few nested functions become pretty difficult to read. This is exactly the problem that piping solves.)*
+
+Let's add a new, fake airline, ["Nashawn Wade Airlines"](https://en.wikipedia.org/wiki/Soul_Plane), code "NW". We'll add this to `airlines`, and look at the effect of different kinds of joins.
+
+```{r}
+airlines_mod <- rbind(airlines, list("NW", "Nashawn Wade Airlines"))
+
+flights %>% 
+  left_join(airlines_mod) %>%
+  nrow()
+```
+
+Now try a right join: 
+```{r}
+flights %>% 
+  right_join(airlines_mod) %>%
+  nrow()
+```
+
+Aha! An extra row. Just to be sure, we'll look at the last row. This is the row that corresponds to carrier "NW":
+
+```{r}
+flights %>% 
+  right_join(airlines_mod) %>%
+  filter(carrier == "NW")
+```
+
+All the data are `NA`, except for `carrier` and `name`.
+
+What would happen if you did a `full_join()`? How about an `anti_join()`
+
+
+# Speed
+
+There is a base R function to join data frames called `merge()`. It is **really** inefficient! Let's use the `system.time()` function to see how long each of these functions takes to execute. (This is a pretty rough-and-ready way to see how fast commands execute - the answers will depend on your computer and what else your computer is trying to do at the moment - but roughly speaking, the `User` column is the actual amount of time your computer spent executing the code).
+
+```{r}
+system.time({
+  merge(flights, airlines)
+})
+```
+```{r}
+system.time({
+  left_join(flights, airlines)
+})
+```
+
+Wow! `merge()` usually takes more than a second, while `left_join()` is closer to 1/20 of a second! That's a big difference!
